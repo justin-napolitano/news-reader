@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://jnap.me/contracts/intel-graph/intel-graph-lifedb-schema.schema.json",
+  "title": "Intel Graph LifeDB Schema Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "target",
+    "schema_name",
+    "status",
+    "canonicality",
+    "research_refs",
+    "tables",
+    "promotion_rules"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "const": "jnap-life-graph" },
+    "schema_name": { "type": "string", "const": "intel_graph" },
+    "status": { "type": "string", "enum": ["proposed", "active", "superseded"] },
+    "canonicality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_intel", "curated_cross_domain_objects", "public_projection"],
+      "properties": {
+        "raw_intel": { "type": "string", "const": "intel_graph" },
+        "curated_cross_domain_objects": { "type": "string", "const": "public.life_graph_objects" },
+        "public_projection": { "type": "string", "const": "public.life_graph_projections" }
+      }
+    },
+    "research_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "purpose", "identity", "evidence_refs"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^intel_graph\\.[a-z_]+$" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "identity": { "type": "string", "minLength": 1 },
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "promotion_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

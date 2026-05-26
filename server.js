@@ -214,10 +214,12 @@ function graphContractsPayload() {
 
 function lifeGraphMigrationsPayload() {
   const manifest = readJson(path.join(ROOT, "integrations", "life-graph", "migration-manifest.json"));
+  const schemaPlan = readJson(path.join(ROOT, "integrations", "life-graph", "intel-schema.json"));
 
-  return apiResponse("life_graph_migrations", manifest, {
+  return apiResponse("life_graph_migrations", { manifest, schema_plan: schemaPlan }, {
     provenance: [
       { type: "repo_local", source: "integrations/life-graph/migration-manifest.json" },
+      { type: "repo_local", source: "integrations/life-graph/intel-schema.json" },
       { type: "repo_local", source: "integrations/life-graph/migrations/003_news_reader_intel_intake.sql" }
     ],
     next_actions: [

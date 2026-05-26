@@ -21,6 +21,7 @@ const FIXTURE_SCHEMA_KEYS = {
   "entity.json": "entity",
   "graph-patch.json": "graph_patch",
   "import-run.json": "import_run",
+  "intel-graph-lifedb-schema.json": "intel_graph_lifedb_schema",
   "intake-event.json": "intake_event",
   "life-graph-import.json": "life_graph_import",
   "life-graph-migration-manifest.json": "life_graph_migration_manifest",
@@ -93,8 +94,19 @@ function validateConfiguredSources(schemas) {
 
 function validateLifeGraphMigrations(schemas) {
   const manifestPath = path.join(ROOT, "integrations", "life-graph", "migration-manifest.json");
+  const schemaPlanPath = path.join(ROOT, "integrations", "life-graph", "intel-schema.json");
   const manifest = readJson(manifestPath);
+  const schemaPlan = readJson(schemaPlanPath);
+  const plannedTables = schemaPlan.tables.map((table) => table.name).sort();
+
   assertValid(schemas.life_graph_migration_manifest, manifest, "life-graph:migration-manifest");
+  assertValid(schemas.intel_graph_lifedb_schema, schemaPlan, "life-graph:intel-schema");
+
+  requireUnique(plannedTables, "intel schema table names");
+
+  if (schemaPlan.canonicality.raw_intel !== "intel_graph") {
+    throw new Error("intel schema must keep raw intel canonical in intel_graph");
+  }
 
   const forbiddenSql = [/\bDROP\s+TABLE\b/i, /\bTRUNCATE\b/i, /\bDELETE\s+FROM\b/i, /\bALTER\s+TABLE\b[\s\S]*?\bDROP\b/i];
   const requiredFragments = [
@@ -103,7 +115,17 @@ function validateLifeGraphMigrations(schemas) {
     "CREATE TABLE IF NOT EXISTS intel_graph.graph_patches",
     "CREATE TABLE IF NOT EXISTS intel_graph.sources",
     "CREATE TABLE IF NOT EXISTS intel_graph.works",
+    "CREATE TABLE IF NOT EXISTS intel_graph.work_segments",
+    "CREATE TABLE IF NOT EXISTS intel_graph.intake_events",
     "CREATE TABLE IF NOT EXISTS intel_graph.annotations",
+    "CREATE TABLE IF NOT EXISTS intel_graph.entities",
+    "CREATE TABLE IF NOT EXISTS intel_graph.topics",
+    "CREATE TABLE IF NOT EXISTS intel_graph.claims",
+    "CREATE TABLE IF NOT EXISTS intel_graph.work_entities",
+    "CREATE TABLE IF NOT EXISTS intel_graph.work_topics",
+    "CREATE TABLE IF NOT EXISTS intel_graph.source_assessments",
+    "CREATE TABLE IF NOT EXISTS intel_graph.relevance_scores",
+    "CREATE TABLE IF NOT EXISTS intel_graph.project_connections",
     "CREATE TABLE IF NOT EXISTS intel_graph.life_graph_mappings",
     "idempotency_key TEXT NOT NULL UNIQUE",
     "source_hash TEXT NOT NULL",
@@ -113,6 +135,11 @@ function validateLifeGraphMigrations(schemas) {
   manifest.migrations.forEach((migration) => {
     const migrationPath = path.join(ROOT, migration.file);
     const sql = fs.readFileSync(migrationPath, "utf8");
+    const creates = [...migration.creates].sort();
+
+    if (JSON.stringify(creates) !== JSON.stringify(plannedTables)) {
+      throw new Error(`${migration.file} creates list does not match integrations/life-graph/intel-schema.json`);
+    }
 
     requiredFragments.forEach((fragment) => {
       if (!sql.includes(fragment)) {

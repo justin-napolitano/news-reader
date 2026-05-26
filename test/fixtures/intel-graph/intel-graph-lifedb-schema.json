@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "intel-graph-lifedb-schema.fixture",
+  "target": "jnap-life-graph",
+  "schema_name": "intel_graph",
+  "status": "proposed",
+  "canonicality": {
+    "raw_intel": "intel_graph",
+    "curated_cross_domain_objects": "public.life_graph_objects",
+    "public_projection": "public.life_graph_projections"
+  },
+  "research_refs": ["bib-prov-dm"],
+  "tables": [
+    {
+      "name": "intel_graph.sources",
+      "purpose": "Track configured sources.",
+      "identity": "source id",
+      "evidence_refs": ["bib-prov-dm"]
+    }
+  ],
+  "promotion_rules": [
+    "Raw intake remains in intel_graph by default."
+  ]
+}

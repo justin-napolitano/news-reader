@@ -26,6 +26,7 @@ They are intentionally storage-neutral. The current reader can normalize sources
 - `project-connection.schema.json`
 - `graph-patch.schema.json`
 - `import-run.schema.json`
+- `intel-graph-lifedb-schema.schema.json`
 - `life-graph-import.schema.json`
 - `life-graph-migration-manifest.schema.json`
 - `relevance-result.schema.json`

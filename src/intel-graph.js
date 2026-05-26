@@ -8,6 +8,7 @@ const CONTRACT_FILES = {
   entity: "entity.schema.json",
   graph_patch: "graph-patch.schema.json",
   import_run: "import-run.schema.json",
+  intel_graph_lifedb_schema: "intel-graph-lifedb-schema.schema.json",
   intake_event: "intake-event.schema.json",
   life_graph_import: "life-graph-import.schema.json",
   life_graph_migration_manifest: "life-graph-migration-manifest.schema.json",

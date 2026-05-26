@@ -105,8 +105,12 @@ async function main() {
   const lifeGraphMigrations = await request("/api/life-graph/migrations");
   const lifeGraphMigrationPayload = JSON.parse(lifeGraphMigrations.text);
 
-  if (!lifeGraphMigrationPayload.ok || lifeGraphMigrationPayload.data?.target !== "jnap-life-graph") {
+  if (!lifeGraphMigrationPayload.ok || lifeGraphMigrationPayload.data?.manifest?.target !== "jnap-life-graph") {
     throw new Error("life graph migration endpoint did not return the expected manifest");
+  }
+
+  if (lifeGraphMigrationPayload.data?.schema_plan?.schema_name !== "intel_graph") {
+    throw new Error("life graph migration endpoint did not return the intel schema plan");
   }
 
   const lifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
