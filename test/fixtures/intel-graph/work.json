@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "work",
+  "id": "work:fixture-story-one",
+  "work_type": "article",
+  "title": "Fixture story one",
+  "url": "https://example.com/story-one",
+  "source_id": "fixture-news",
+  "source_name": "Fixture News",
+  "section": "Test",
+  "published_at": "2026-05-26T12:00:00.000Z",
+  "excerpt": "A short but useful fixture summary for the first story.",
+  "identifiers": [
+    {
+      "type": "feed_item_id",
+      "value": "fixture-story-one"
+    }
+  ],
+  "rights": {
+    "full_text_storage": "metadata_only",
+    "notes": "Readable article text is transient by default."
+  },
+  "provenance": {
+    "source_item_id": "fixture-story-one",
+    "evidence_refs": ["source:fixture-news", "url:https://example.com/story-one"]
+  }
+}
+

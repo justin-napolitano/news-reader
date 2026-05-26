@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "intake_event",
+  "id": "event:fixture-opened",
+  "event_type": "opened",
+  "occurred_at": "2026-05-26T12:05:00.000Z",
+  "actor": {
+    "type": "user",
+    "id": "local-user"
+  },
+  "target": {
+    "kind": "work",
+    "id": "work:fixture-story-one"
+  },
+  "source": {
+    "surface": "reader",
+    "url": "https://example.com/story-one"
+  },
+  "metadata": {
+    "route": "/reader.html"
+  }
+}
+

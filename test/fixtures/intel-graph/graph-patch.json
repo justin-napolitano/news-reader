@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "graph_patch",
+  "id": "graph_patch:fixture-dry-run",
+  "patch_type": "import",
+  "idempotency_key": "fixture-import-2026-05-26",
+  "mode": "dry_run",
+  "preconditions": ["contracts_validated", "metadata_only_storage_policy"],
+  "operations": [
+    {
+      "op": "upsert",
+      "object_kind": "source",
+      "object_id": "fixture-news",
+      "payload": {
+        "kind": "source",
+        "id": "fixture-news"
+      }
+    }
+  ],
+  "audit": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 1,
+    "blocked": 0,
+    "notes": ["Dry run only."]
+  }
+}
+

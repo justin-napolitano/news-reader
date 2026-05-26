@@ -66,7 +66,61 @@ async function main() {
     throw new Error("fixture feed did not return two items");
   }
 
-  console.log(JSON.stringify({ ok: true, checked: ["home", "reader page", "sources", "fixture feed"] }, null, 2));
+  const graphSources = await request("/api/graph/sources");
+  const graphSourcePayload = JSON.parse(graphSources.text);
+
+  if (!Array.isArray(graphSourcePayload.sources) || graphSourcePayload.sources.some((source) => source.kind !== "source")) {
+    throw new Error("graph sources endpoint returned invalid source objects");
+  }
+
+  const graphContracts = await request("/api/graph/contracts");
+  const graphContractPayload = JSON.parse(graphContracts.text);
+
+  if (!Array.isArray(graphContractPayload.contracts) || graphContractPayload.contracts.length < 11) {
+    throw new Error("graph contracts endpoint did not return the expected contracts");
+  }
+
+  const graphWorks = await request("/api/graph/works");
+  const graphWorkPayload = JSON.parse(graphWorks.text);
+
+  if (!Array.isArray(graphWorkPayload.works) || graphWorkPayload.works.length !== 2) {
+    throw new Error("graph works endpoint did not return normalized fixture works");
+  }
+
+  if (graphWorkPayload.import_run?.kind !== "import_run" || graphWorkPayload.dry_run_patch?.kind !== "graph_patch") {
+    throw new Error("graph works endpoint did not return import_run and dry_run_patch metadata");
+  }
+
+  if (graphWorkPayload.works.some((work) => work.rights?.full_text_storage !== "metadata_only")) {
+    throw new Error("graph works endpoint violated metadata-only storage policy");
+  }
+
+  const secondGraphWorks = await request("/api/graph/works");
+  const secondGraphWorkPayload = JSON.parse(secondGraphWorks.text);
+
+  if (secondGraphWorkPayload.import_run?.idempotency_key !== graphWorkPayload.import_run?.idempotency_key) {
+    throw new Error("graph works endpoint returned unstable idempotency keys for the same fixture payload");
+  }
+
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        checked: [
+          "home",
+          "reader page",
+          "sources",
+          "fixture feed",
+          "graph sources",
+          "graph contracts",
+          "graph works",
+          "idempotency"
+        ]
+      },
+      null,
+      2
+    )
+  );
 }
 
 main()

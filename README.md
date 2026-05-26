@@ -34,6 +34,22 @@ Each source needs:
 
 AP was not seeded because `https://apnews.com/index.rss` returned `401` during setup from this machine.
 
+## Intel Graph
+
+This repo now exposes read-only normalized graph objects:
+
+- `GET /api/graph/sources`
+- `GET /api/graph/contracts`
+- `GET /api/graph/works`
+
+Contracts live in `contracts/`. Fixtures live in `test/fixtures/intel-graph/`.
+
+Run contract validation with:
+
+```bash
+npm run contracts
+```
+
 ## Reader Rules
 
 - Feed index comes from RSS/Atom.

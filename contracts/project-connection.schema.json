@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://jnap.me/contracts/intel-graph/project-connection.schema.json",
+  "title": "Intel Graph Project Connection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "from", "to", "relationship", "status", "provenance"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "project_connection" },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9:._-]*$" },
+    "from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["work", "annotation", "claim", "topic", "entity"] },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "to": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["project", "resume_fact", "writing_topic", "research_question", "site_route"] },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "relationship": {
+      "type": "string",
+      "enum": ["supports", "informs", "contradicts", "mentions", "evidence_for", "todo_for", "inspired_by"]
+    },
+    "status": { "type": "string", "enum": ["suggested", "reviewed", "approved", "rejected"] },
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authored_by", "evidence_refs"],
+      "properties": {
+        "authored_by": { "type": "string", "enum": ["user", "agent", "importer", "system"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
+

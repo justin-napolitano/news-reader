@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "entity",
+  "id": "entity:fixture-news",
+  "entity_type": "organization",
+  "name": "Fixture News",
+  "url": "https://example.com",
+  "aliases": ["Fixture"],
+  "provenance": {
+    "source": "importer",
+    "evidence_refs": ["source:fixture-news"]
+  }
+}
+
