@@ -45,7 +45,7 @@ async function main() {
 
   const home = await request("/");
 
-  if (!home.text.includes("News Reader")) {
+  if (!home.text.includes("News Reader") || !home.text.includes("view-strip")) {
     throw new Error("home page did not render News Reader");
   }
 
@@ -155,11 +155,24 @@ async function main() {
     throw new Error("life graph apply endpoint allowed non-POST requests");
   }
 
+  const stateGet = await fetch(`${BASE_URL}/api/life-graph/intel/reader/state`);
+
+  if (stateGet.status !== 405) {
+    throw new Error("life graph reader state endpoint allowed non-POST requests");
+  }
+
   const remoteWorks = await request("/api/life-graph/intel/works");
   const remoteWorksPayload = JSON.parse(remoteWorks.text);
 
   if (remoteWorksPayload.ok || remoteWorksPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
     throw new Error("life graph remote works endpoint should block safely when unconfigured");
+  }
+
+  const remoteReaderWorks = await request("/api/life-graph/intel/reader/works");
+  const remoteReaderWorksPayload = JSON.parse(remoteReaderWorks.text);
+
+  if (remoteReaderWorksPayload.ok || remoteReaderWorksPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("life graph reader works endpoint should block safely when unconfigured");
   }
 
   console.log(
@@ -179,7 +192,9 @@ async function main() {
           "life graph status",
           "life graph dry-run import",
           "life graph post-only mutation guard",
-          "life graph remote block"
+          "life graph reader state mutation guard",
+          "life graph remote block",
+          "life graph reader works block"
         ]
       },
       null,

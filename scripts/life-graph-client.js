@@ -6,6 +6,8 @@ const COMMANDS = {
   "local-dry-run": { method: "POST", path: "/api/life-graph/import/dry-run" },
   "remote-dry-run": { method: "POST", path: "/api/life-graph/import/remote-dry-run" },
   apply: { method: "POST", path: "/api/life-graph/import/apply" },
+  "reader-works": { method: "GET", path: "/api/life-graph/intel/reader/works" },
+  "retention-dry-run": { method: "POST", path: "/api/life-graph/intel/retention/apply" },
   sources: { method: "GET", path: "/api/life-graph/intel/sources" },
   works: { method: "GET", path: "/api/life-graph/intel/works" }
 };

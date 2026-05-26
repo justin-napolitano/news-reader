@@ -14,14 +14,17 @@ const {
 } = require("./src/intel-graph");
 const { createLifeGraphDryRunImport } = require("./src/life-graph-adapter");
 const {
+  applyLifeGraphRetention,
   intelSourceToReaderSource,
   intelWorkToReaderItem,
   lifeGraphConfig,
   lifeGraphConfigStatus,
   listLifeGraphIntelSources,
   listLifeGraphIntelWorks,
+  listLifeGraphReaderWorks,
   remoteData,
-  sendNewsReaderImport
+  sendNewsReaderImport,
+  updateLifeGraphReaderState
 } = require("./src/life-graph-client");
 
 const ROOT = __dirname;
@@ -68,6 +71,31 @@ function sendText(res, status, body, contentType = "text/plain; charset=utf-8") 
     "cache-control": "no-store"
   });
   res.end(body);
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+      if (body.length > 1024 * 1024) {
+        reject(new Error("Request body too large"));
+      }
+    });
+    req.on("end", () => {
+      if (!body.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(body));
+      } catch (_err) {
+        resolve({});
+      }
+    });
+    req.on("error", reject);
+  });
 }
 
 function normalizeWhitespace(value) {
@@ -426,6 +454,52 @@ async function lifeGraphIntelWorksPayload({ sourceId = "", limit = 160 } = {}) {
   });
 }
 
+async function lifeGraphReaderWorksPayload({ view = "unread", sourceId = "", limit = 160 } = {}) {
+  const remote = await listLifeGraphReaderWorks({ view, sourceId, limit });
+  const data = remoteData(remote.response);
+  const works = Array.isArray(data.works) ? data.works : [];
+
+  return apiResponse("life_graph_intel_reader_works", {
+    view: data.view || view,
+    works,
+    reader_items: works.map(intelWorkToReaderItem),
+    count: works.length,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/reader/works" }]
+  });
+}
+
+async function updateReaderStatePayload({ workId, action }) {
+  const remote = await updateLifeGraphReaderState({
+    workId,
+    action,
+    payload: { client: "news-reader" }
+  });
+
+  return apiResponse("life_graph_intel_reader_state", {
+    remote: remote.response,
+    state: remoteData(remote.response).state || null
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/reader/state" }]
+  });
+}
+
+async function retentionApplyPayload({ apply = false } = {}) {
+  const remote = await applyLifeGraphRetention({ apply });
+
+  return apiResponse("life_graph_intel_retention_apply", {
+    remote: remote.response,
+    dry_run: !apply,
+    count: remoteData(remote.response).count || 0
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/retention/apply" }]
+  });
+}
+
 function fixturePayload() {
   const xml = fs.readFileSync(path.join(ROOT, "test", "fixtures", "feed.xml"), "utf8");
   const source = fixtureSource();
@@ -544,27 +618,26 @@ async function allowedReaderSources() {
   return loadSources();
 }
 
-async function readerItemsPayload({ refresh = false } = {}) {
+async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
   if (lifeGraphConfig().itemsSource !== "life_graph") {
-    return loadItems({ refresh });
+    return { ...(await loadItems({ refresh })), view: "feed" };
   }
 
-  const remote = await listLifeGraphIntelWorks({ limit: 160 });
+  const remote = await listLifeGraphReaderWorks({ view, limit: 160 });
 
   if (remote.ok) {
     const data = remoteData(remote.response);
     const works = Array.isArray(data.works) ? data.works : [];
     const items = works.map(intelWorkToReaderItem);
 
-    if (items.length) {
-      return {
-        generatedAt: new Date().toISOString(),
-        itemCount: items.length,
-        source: "life_graph",
-        errors: [],
-        items
-      };
-    }
+    return {
+      generatedAt: new Date().toISOString(),
+      itemCount: items.length,
+      source: "life_graph",
+      view: data.view || view,
+      errors: [],
+      items
+    };
   }
 
   const fallback = await loadItems({ refresh });
@@ -572,6 +645,7 @@ async function readerItemsPayload({ refresh = false } = {}) {
   return {
     ...fallback,
     source: "feed_fallback",
+    view: "feed_fallback",
     errors: [
       {
         source: "Life Graph",
@@ -704,7 +778,9 @@ async function handle(req, res) {
   const postOnlyPaths = new Set([
     "/api/life-graph/import/dry-run",
     "/api/life-graph/import/remote-dry-run",
-    "/api/life-graph/import/apply"
+    "/api/life-graph/import/apply",
+    "/api/life-graph/intel/reader/state",
+    "/api/life-graph/intel/retention/apply"
   ]);
 
   try {
@@ -745,7 +821,7 @@ async function handle(req, res) {
 
     if (requestUrl.pathname === "/api/items") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
-      sendJson(res, 200, await readerItemsPayload({ refresh }));
+      sendJson(res, 200, await readerItemsPayload({ refresh, view: requestUrl.searchParams.get("view") || "unread" }));
       return;
     }
 
@@ -787,6 +863,38 @@ async function handle(req, res) {
           limit: Number.parseInt(requestUrl.searchParams.get("limit") || "160", 10)
         })
       );
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/reader/works") {
+      sendJson(
+        res,
+        200,
+        await lifeGraphReaderWorksPayload({
+          view: requestUrl.searchParams.get("view") || "unread",
+          sourceId: requestUrl.searchParams.get("source_id") || "",
+          limit: Number.parseInt(requestUrl.searchParams.get("limit") || "160", 10)
+        })
+      );
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/reader/state") {
+      const body = await readJsonBody(req);
+      sendJson(
+        res,
+        200,
+        await updateReaderStatePayload({
+          workId: body.work_id || body.workId || "",
+          action: body.action || ""
+        })
+      );
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/retention/apply") {
+      const body = await readJsonBody(req);
+      sendJson(res, 200, await retentionApplyPayload({ apply: Boolean(body.apply) }));
       return;
     }
 
