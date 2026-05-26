@@ -7,6 +7,9 @@ const server = spawn(process.execPath, ["server.js"], {
   env: {
     ...process.env,
     PORT,
+    LIFE_GRAPH_API_BASE_URL: "",
+    LIFE_GRAPH_WRITE_TOKEN: "",
+    NEWS_READER_ITEMS_SOURCE: "feed",
     NEWS_READER_FIXTURE: "1"
   },
   stdio: ["ignore", "pipe", "pipe"]
@@ -113,6 +116,13 @@ async function main() {
     throw new Error("life graph migration endpoint did not return the intel schema plan");
   }
 
+  const lifeGraphStatus = await request("/api/life-graph/status");
+  const lifeGraphStatusPayload = JSON.parse(lifeGraphStatus.text);
+
+  if (!lifeGraphStatusPayload.ok || lifeGraphStatusPayload.data?.configured !== false) {
+    throw new Error("life graph status endpoint did not return safe config metadata");
+  }
+
   const lifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
   const lifeGraphDryRunPayload = JSON.parse(lifeGraphDryRun.text);
 
@@ -139,6 +149,19 @@ async function main() {
     throw new Error("life graph dry-run endpoint returned unstable source hashes");
   }
 
+  const applyGet = await fetch(`${BASE_URL}/api/life-graph/import/apply`);
+
+  if (applyGet.status !== 405) {
+    throw new Error("life graph apply endpoint allowed non-POST requests");
+  }
+
+  const remoteWorks = await request("/api/life-graph/intel/works");
+  const remoteWorksPayload = JSON.parse(remoteWorks.text);
+
+  if (remoteWorksPayload.ok || remoteWorksPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("life graph remote works endpoint should block safely when unconfigured");
+  }
+
   console.log(
     JSON.stringify(
       {
@@ -153,7 +176,10 @@ async function main() {
           "graph works",
           "idempotency",
           "life graph migrations",
-          "life graph dry-run import"
+          "life graph status",
+          "life graph dry-run import",
+          "life graph post-only mutation guard",
+          "life graph remote block"
         ]
       },
       null,
