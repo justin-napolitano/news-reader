@@ -51,6 +51,8 @@ The long-term product is not a feed. It is a memory and source-governance layer.
 - Extensible: each intake channel should be a plugin or connector with a contract.
 - Human-controlled: automation may suggest, cluster, enrich, or route; it should not silently rewrite the user's reading history or source preferences.
 - Evidence-oriented: claims, annotations, and summaries should point back to the original source URL, work id, or captured citation.
+- Idempotent: imports, graph patches, migrations, and scheduled runs should be replayable without duplicating facts or silently changing user state.
+- Research-quality: implementation-driving claims should cite a bibliography entry, local artifact, code observation, or explicit project assumption.
 
 ## System Shape
 
@@ -66,6 +68,23 @@ The expected architecture:
 - Import connectors: RSS, Atom, Gutenberg, Crossref/OpenAlex, browser capture, GitHub, newsletters, and manual notes.
 - Curation agents: propose tags, source ratings, reading queues, and project connections.
 - Governance layer: contracts, exec plans, review gates, and source policy checks.
+
+## Lineage And Relevance Posture
+
+Everything important should be relatable, but not every relation is equally supported.
+
+The graph should distinguish:
+
+- source-authored claims
+- user-authored notes
+- agent-inferred tags
+- deterministic imports
+- ranking projections
+- approved graph mutations
+
+Relevance and ranking should explain why an item surfaced. A ranking result should point to the source records, graph edges, terms, annotations, user actions, or project links that produced it. Ranking is advisory by default; mutation requires a separate graph patch or user action.
+
+Persistent graph changes should use idempotent patch and migration contracts. A repeated importer run should not create duplicate works, duplicate annotations, or duplicate source assessments.
 
 ## Core Graph Objects
 
@@ -122,4 +141,3 @@ This project should follow the research, plan, implement, review loop:
 6. Review the result against the project intent and bibliography.
 
 The first implementation work should preserve the current reader while adding contracts and persistence around it.
-

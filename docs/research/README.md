@@ -4,6 +4,8 @@ This directory holds the research spine for the Open Intel Graph.
 
 Research should not be a loose pile of links. Each research question should produce a scoped recommendation that can become one or more exec plan nodes.
 
+Use [Research Quality Gates](research-quality-gates.md) before any implementation slice. The [Local Resource Review](local-resource-review.md) records the platform, researcher, and resume artifacts already imported into this repo's planning layer. Future plans should not contain open-ended product or architecture claims without a bibliography id, a local artifact ref, or an explicit project assumption.
+
 ## Research Question Format
 
 Use this structure for future research notes:
@@ -25,6 +27,12 @@ findings:
 recommendation: Concrete project guidance
 follow_up_nodes:
   - execplan-id
+claim_ledger:
+  - claim: Concise claim the plan depends on
+    class: bibliography_backed | local_artifact_backed | implementation_observation | project_assumption | open_question
+    evidence_ref: bib-or-local-ref
+    why_it_matters: Why this claim affects the build
+    build_consequence: What implementation choice follows
 ```
 
 ## Evidence Levels
@@ -49,6 +57,8 @@ Prefer standards and official docs for data contracts. Use implementation refere
 - `rq-008-gutenberg-import`: How should public-domain books enter the graph?
 - `rq-009-scholar-import`: How should papers and DOI metadata enter the graph?
 - `rq-010-agent-workflows`: Which agent actions should be allowed to enrich the graph, and which require human review?
+- `rq-011-idempotent-graph-patches`: What patch and migration contract keeps graph writes replayable, auditable, and safe?
+- `rq-012-relevance-ranking`: Which relevance signals should rank works, sources, annotations, and project connections without hiding evidence or mutating state by default?
 
 ## Output Rule
 
@@ -59,3 +69,12 @@ Every answered research question should produce at least one of:
 - an exec plan node
 - a rejected-path note explaining what not to build
 
+## Implementation Readiness Rule
+
+A research question is not ready to become implementation until it has:
+
+- at least one evidence ref or a clearly labeled project assumption
+- a scoped recommendation
+- explicit non-goals
+- a validation path
+- a known mutation policy when graph state is touched
