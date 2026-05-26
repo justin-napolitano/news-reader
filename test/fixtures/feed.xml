@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture News</title>
+    <item>
+      <title>Fixture story one</title>
+      <link>https://example.com/story-one</link>
+      <pubDate>Tue, 26 May 2026 12:00:00 GMT</pubDate>
+      <description><![CDATA[<p>A short but useful fixture summary for the first story.</p>]]></description>
+    </item>
+    <item>
+      <title>Fixture story two</title>
+      <link>https://example.com/story-two</link>
+      <pubDate>Tue, 26 May 2026 13:00:00 GMT</pubDate>
+      <description>Another useful fixture summary.</description>
+    </item>
+  </channel>
+</rss>

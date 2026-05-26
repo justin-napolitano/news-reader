@@ -1,0 +1,54 @@
+{
+  "updated": "2026-05-26",
+  "sources": [
+    {
+      "id": "propublica",
+      "name": "ProPublica",
+      "section": "Investigations",
+      "feedUrl": "https://www.propublica.org/feeds/propublica/main",
+      "allowHosts": ["www.propublica.org", "propublica.org"]
+    },
+    {
+      "id": "npr-news",
+      "name": "NPR",
+      "section": "News",
+      "feedUrl": "https://feeds.npr.org/1001/rss.xml",
+      "allowHosts": ["www.npr.org", "npr.org"]
+    },
+    {
+      "id": "nytimes",
+      "name": "New York Times",
+      "section": "Top",
+      "feedUrl": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+      "allowHosts": ["www.nytimes.com", "nytimes.com"]
+    },
+    {
+      "id": "bbc-world",
+      "name": "BBC",
+      "section": "World",
+      "feedUrl": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "allowHosts": ["www.bbc.com", "bbc.com", "www.bbc.co.uk", "bbc.co.uk"]
+    },
+    {
+      "id": "guardian-world",
+      "name": "The Guardian",
+      "section": "World",
+      "feedUrl": "https://www.theguardian.com/world/rss",
+      "allowHosts": ["www.theguardian.com", "theguardian.com"]
+    },
+    {
+      "id": "conversation-us",
+      "name": "The Conversation",
+      "section": "Analysis",
+      "feedUrl": "https://theconversation.com/us/articles.atom",
+      "allowHosts": ["theconversation.com"]
+    },
+    {
+      "id": "rest-of-world",
+      "name": "Rest of World",
+      "section": "Technology",
+      "feedUrl": "https://restofworld.org/feed/latest/",
+      "allowHosts": ["restofworld.org"]
+    }
+  ]
+}
