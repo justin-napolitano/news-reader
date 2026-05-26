@@ -13,6 +13,16 @@ const {
   stableHash
 } = require("./src/intel-graph");
 const { createLifeGraphDryRunImport } = require("./src/life-graph-adapter");
+const {
+  intelSourceToReaderSource,
+  intelWorkToReaderItem,
+  lifeGraphConfig,
+  lifeGraphConfigStatus,
+  listLifeGraphIntelSources,
+  listLifeGraphIntelWorks,
+  remoteData,
+  sendNewsReaderImport
+} = require("./src/life-graph-client");
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
@@ -179,6 +189,10 @@ async function fetchText(url) {
 }
 
 function loadSources() {
+  if (process.env.NEWS_READER_FIXTURE === "1") {
+    return [fixtureSource()];
+  }
+
   return readJson(SOURCE_PATH).sources;
 }
 
@@ -228,6 +242,12 @@ function lifeGraphMigrationsPayload() {
         description: "Review the proposed migration before copying or vendoring it into jnap-life-graph."
       }
     ]
+  });
+}
+
+function lifeGraphStatusPayload() {
+  return apiResponse("life_graph_status", lifeGraphConfigStatus(), {
+    provenance: [{ type: "env", source: "LIFE_GRAPH_API_BASE_URL/LIFE_GRAPH_WRITE_TOKEN/NEWS_READER_ITEMS_SOURCE" }]
   });
 }
 
@@ -335,21 +355,96 @@ async function lifeGraphImportDryRunPayload({ refresh = false } = {}) {
   });
 }
 
+async function pushLifeGraphImportPayload({ refresh = false, apply = false } = {}) {
+  const localDryRun = await lifeGraphImportDryRunPayload({ refresh });
+
+  if (!localDryRun.ok) {
+    return localDryRun;
+  }
+
+  const remote = await sendNewsReaderImport(localDryRun.data, { apply });
+  const blockers = remote.blockers || [];
+
+  return apiResponse(`life_graph_import_${apply ? "apply" : "remote_dry_run"}`, {
+    applied: apply && remote.ok,
+    local_import: {
+      id: localDryRun.data.id,
+      idempotency_key: localDryRun.data.idempotency_key,
+      source_hash: localDryRun.data.source_hash,
+      object_count: localDryRun.data.objects.length,
+      edge_count: localDryRun.data.edges.length
+    },
+    remote: remote.response
+  }, {
+    blockers,
+    provenance: [
+      { type: "repo_local", source: "data/sources.json" },
+      { type: "news_reader", source: "POST /api/life-graph/import/dry-run" },
+      { type: "life_graph_api", source: `/api/intel/imports/news-reader/${apply ? "apply" : "dry-run"}` }
+    ],
+    next_actions: remote.ok
+      ? [
+          {
+            action: "list_life_graph_works",
+            path: "/api/life-graph/intel/works",
+            description: "Verify imported works are readable through Life Graph."
+          }
+        ]
+      : []
+  });
+}
+
+async function lifeGraphIntelSourcesPayload() {
+  const remote = await listLifeGraphIntelSources({ limit: 500 });
+  const data = remoteData(remote.response);
+  const sources = Array.isArray(data.sources) ? data.sources : [];
+
+  return apiResponse("life_graph_intel_sources", {
+    sources,
+    reader_sources: sources.map(intelSourceToReaderSource),
+    count: sources.length,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/sources" }]
+  });
+}
+
+async function lifeGraphIntelWorksPayload({ sourceId = "", limit = 160 } = {}) {
+  const remote = await listLifeGraphIntelWorks({ sourceId, limit });
+  const data = remoteData(remote.response);
+  const works = Array.isArray(data.works) ? data.works : [];
+
+  return apiResponse("life_graph_intel_works", {
+    works,
+    reader_items: works.map(intelWorkToReaderItem),
+    count: works.length,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/works" }]
+  });
+}
+
 function fixturePayload() {
   const xml = fs.readFileSync(path.join(ROOT, "test", "fixtures", "feed.xml"), "utf8");
-  const source = {
-    id: "fixture",
-    name: "Fixture News",
-    section: "Test",
-    feedUrl: "fixture://feed",
-    allowHosts: ["example.com"]
-  };
+  const source = fixtureSource();
 
   return {
     generatedAt: new Date().toISOString(),
     itemCount: 2,
     errors: [],
     items: parseFeed(xml, source)
+  };
+}
+
+function fixtureSource() {
+  return {
+    id: "fixture",
+    name: "Fixture News",
+    section: "Test",
+    feedUrl: "fixture://feed",
+    allowHosts: ["example.com"]
   };
 }
 
@@ -399,6 +494,94 @@ async function loadItems({ refresh = false } = {}) {
 
   feedCache = { fetchedAt: Date.now(), payload };
   return payload;
+}
+
+async function readerSourcesPayload() {
+  if (lifeGraphConfig().itemsSource !== "life_graph") {
+    return { sources: loadSources(), source: "feed", errors: [] };
+  }
+
+  const sources = await loadLifeGraphReaderSources();
+
+  if (sources.length) {
+    return { sources, source: "life_graph", errors: [] };
+  }
+
+  return {
+    sources: loadSources(),
+    source: "feed_fallback",
+    errors: [
+      {
+        source: "Life Graph",
+        message: "Life Graph source list returned no sources."
+      }
+    ]
+  };
+}
+
+async function loadLifeGraphReaderSources() {
+  const remote = await listLifeGraphIntelSources({ limit: 500 });
+
+  if (remote.ok) {
+    const data = remoteData(remote.response);
+    const sources = Array.isArray(data.sources) ? data.sources.map(intelSourceToReaderSource) : [];
+
+    return sources;
+  }
+
+  return [];
+}
+
+async function allowedReaderSources() {
+  if (lifeGraphConfig().itemsSource === "life_graph") {
+    const sources = await loadLifeGraphReaderSources();
+
+    if (sources.length) {
+      return sources;
+    }
+  }
+
+  return loadSources();
+}
+
+async function readerItemsPayload({ refresh = false } = {}) {
+  if (lifeGraphConfig().itemsSource !== "life_graph") {
+    return loadItems({ refresh });
+  }
+
+  const remote = await listLifeGraphIntelWorks({ limit: 160 });
+
+  if (remote.ok) {
+    const data = remoteData(remote.response);
+    const works = Array.isArray(data.works) ? data.works : [];
+    const items = works.map(intelWorkToReaderItem);
+
+    if (items.length) {
+      return {
+        generatedAt: new Date().toISOString(),
+        itemCount: items.length,
+        source: "life_graph",
+        errors: [],
+        items
+      };
+    }
+  }
+
+  const fallback = await loadItems({ refresh });
+
+  return {
+    ...fallback,
+    source: "feed_fallback",
+    errors: [
+      {
+        source: "Life Graph",
+        message:
+          (remote.blockers || []).map((blocker) => blocker.message || blocker.code).join("; ") ||
+          "Life Graph works list returned no works."
+      },
+      ...fallback.errors
+    ]
+  };
 }
 
 function hostAllowed(articleUrl, sources) {
@@ -473,7 +656,7 @@ async function readArticle(articleUrl) {
     return cached.payload;
   }
 
-  const sources = loadSources();
+  const sources = await allowedReaderSources();
 
   if (!hostAllowed(articleUrl, sources)) {
     const allowed = sources.flatMap((source) => source.allowHosts || []);
@@ -518,15 +701,25 @@ function serveStatic(req, res, pathname) {
 
 async function handle(req, res) {
   const requestUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const postOnlyPaths = new Set([
+    "/api/life-graph/import/dry-run",
+    "/api/life-graph/import/remote-dry-run",
+    "/api/life-graph/import/apply"
+  ]);
 
   try {
+    if (postOnlyPaths.has(requestUrl.pathname) && req.method !== "POST") {
+      sendJson(res, 405, { error: "Method not allowed" });
+      return;
+    }
+
     if (requestUrl.pathname === "/api/health") {
       sendJson(res, 200, { ok: true });
       return;
     }
 
     if (requestUrl.pathname === "/api/sources") {
-      sendJson(res, 200, { sources: loadSources() });
+      sendJson(res, 200, await readerSourcesPayload());
       return;
     }
 
@@ -545,9 +738,14 @@ async function handle(req, res) {
       return;
     }
 
+    if (requestUrl.pathname === "/api/life-graph/status") {
+      sendJson(res, 200, lifeGraphStatusPayload());
+      return;
+    }
+
     if (requestUrl.pathname === "/api/items") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
-      sendJson(res, 200, await loadItems({ refresh }));
+      sendJson(res, 200, await readerItemsPayload({ refresh }));
       return;
     }
 
@@ -560,6 +758,35 @@ async function handle(req, res) {
     if (requestUrl.pathname === "/api/life-graph/import/dry-run") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
       sendJson(res, 200, await lifeGraphImportDryRunPayload({ refresh }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/import/remote-dry-run") {
+      const refresh = requestUrl.searchParams.get("refresh") === "1";
+      sendJson(res, 200, await pushLifeGraphImportPayload({ refresh, apply: false }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/import/apply") {
+      const refresh = requestUrl.searchParams.get("refresh") === "1";
+      sendJson(res, 200, await pushLifeGraphImportPayload({ refresh, apply: true }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/sources") {
+      sendJson(res, 200, await lifeGraphIntelSourcesPayload());
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/works") {
+      sendJson(
+        res,
+        200,
+        await lifeGraphIntelWorksPayload({
+          sourceId: requestUrl.searchParams.get("source_id") || "",
+          limit: Number.parseInt(requestUrl.searchParams.get("limit") || "160", 10)
+        })
+      );
       return;
     }
 

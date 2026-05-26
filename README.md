@@ -42,7 +42,12 @@ This repo now exposes read-only normalized graph objects:
 - `GET /api/graph/contracts`
 - `GET /api/graph/works`
 - `GET /api/life-graph/migrations`
+- `GET /api/life-graph/status`
 - `POST /api/life-graph/import/dry-run`
+- `POST /api/life-graph/import/remote-dry-run`
+- `POST /api/life-graph/import/apply`
+- `GET /api/life-graph/intel/sources`
+- `GET /api/life-graph/intel/works`
 
 Contracts live in `contracts/`. Fixtures live in `test/fixtures/intel-graph/`.
 
@@ -52,6 +57,28 @@ selected records can later be promoted into Life Graph `life_object` records and
 
 Proposed LifeDB migrations live in `integrations/life-graph/migrations/`. They are review artifacts for
 `jnap-life-graph`; copy or vendor them there only after reviewing the migration manifest.
+
+After the Life Graph migration/API is available, this repo can call it directly. Configure secrets in `.env`, not in repo files:
+
+```bash
+LIFE_GRAPH_API_BASE_URL=http://127.0.0.1:8787
+LIFE_GRAPH_WRITE_TOKEN=...
+NEWS_READER_ITEMS_SOURCE=life_graph
+```
+
+The reader UI defaults to feed mode. Set `NEWS_READER_ITEMS_SOURCE=life_graph` to read article cards from
+`jnap-life-graph` with feed fallback for local development.
+
+With the local reader server running:
+
+```bash
+npm run life-graph:status
+npm run life-graph:dry-run
+npm run life-graph:push-dry-run
+npm run life-graph:apply
+npm run life-graph:sources
+npm run life-graph:works
+```
 
 Run contract validation with:
 
