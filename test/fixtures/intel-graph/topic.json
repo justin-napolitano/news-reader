@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "topic",
+  "id": "topic:reader-systems",
+  "label": "Reader Systems",
+  "description": "Tools for intake, reading, and source governance.",
+  "aliases": ["intel graph", "source graph"],
+  "provenance": {
+    "source": "user",
+    "evidence_refs": ["docs/project-intent.md"]
+  }
+}
+

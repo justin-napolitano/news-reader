@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "project_connection",
+  "id": "connection:fixture-work-reader-systems",
+  "from": {
+    "kind": "work",
+    "id": "work:fixture-story-one"
+  },
+  "to": {
+    "kind": "research_question",
+    "id": "rq-001-source-and-work-model"
+  },
+  "relationship": "informs",
+  "status": "suggested",
+  "score": 0.8,
+  "provenance": {
+    "authored_by": "system",
+    "evidence_refs": ["work:fixture-story-one", "docs/research/README.md"]
+  }
+}
+

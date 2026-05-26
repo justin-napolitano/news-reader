@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "kind": "relevance_result",
+  "id": "relevance:fixture-story-reader-systems",
+  "algorithm": {
+    "id": "fixture-keyword-overlap",
+    "version": "0.1.0"
+  },
+  "query": {
+    "intent": "Find reader-system design evidence.",
+    "terms": ["reader", "source", "graph"]
+  },
+  "candidate": {
+    "kind": "work",
+    "id": "work:fixture-story-one"
+  },
+  "score": 0.72,
+  "reason_codes": ["matched_reader_terms", "source_metadata_available"],
+  "evidence_refs": ["work:fixture-story-one", "source:fixture-news"],
+  "missing_evidence_refs": ["annotation:none"],
+  "tie_breaker": "work:fixture-story-one",
+  "confidence_note": "Fixture result for contract validation only.",
+  "mutation_policy": "advisory_only"
+}

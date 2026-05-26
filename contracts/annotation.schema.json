@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://jnap.me/contracts/intel-graph/annotation.schema.json",
+  "title": "Intel Graph Annotation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "annotation_type", "body", "target", "created_at", "provenance"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "annotation" },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9:._-]*$" },
+    "annotation_type": {
+      "type": "string",
+      "enum": ["highlight", "note", "summary", "claim_extraction", "question", "critique"]
+    },
+    "motivation": {
+      "type": "string",
+      "enum": ["bookmarking", "classifying", "commenting", "describing", "highlighting", "questioning", "tagging"]
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "text"],
+      "properties": {
+        "format": { "type": "string", "enum": ["text", "markdown", "quote"] },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work_id"],
+      "properties": {
+        "work_id": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "selector": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["text_quote", "text_position", "fragment", "section"] },
+            "exact": { "type": "string" },
+            "prefix": { "type": "string" },
+            "suffix": { "type": "string" },
+            "start": { "type": "integer", "minimum": 0 },
+            "end": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authored_by", "evidence_refs"],
+      "properties": {
+        "authored_by": { "type": "string", "enum": ["user", "agent", "importer"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "import_run",
+  "id": "import_run:fixture-feed",
+  "importer_id": "news-reader.feed-index",
+  "source": {
+    "kind": "source",
+    "id": "fixture-news"
+  },
+  "idempotency_key": "fixture-feed-2026-05-26",
+  "started_at": "2026-05-26T12:00:00.000Z",
+  "finished_at": "2026-05-26T12:00:01.000Z",
+  "status": "completed",
+  "counts": {
+    "seen": 2,
+    "created": 0,
+    "updated": 0,
+    "skipped": 2,
+    "blocked": 0
+  },
+  "errors": []
+}
+

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "annotation",
+  "id": "annotation:fixture-note",
+  "annotation_type": "note",
+  "motivation": "commenting",
+  "body": {
+    "format": "markdown",
+    "text": "This fixture shows how a reader note stays tied to a work."
+  },
+  "target": {
+    "work_id": "work:fixture-story-one",
+    "url": "https://example.com/story-one",
+    "selector": {
+      "type": "text_quote",
+      "exact": "A short but useful fixture summary"
+    }
+  },
+  "created_at": "2026-05-26T12:06:00.000Z",
+  "provenance": {
+    "authored_by": "user",
+    "evidence_refs": ["work:fixture-story-one"]
+  }
+}
+

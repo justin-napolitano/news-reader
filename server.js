@@ -3,6 +3,15 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { URL } = require("url");
+const {
+  CONTRACT_FILES,
+  createDryRunGraphPatch,
+  createImportRun,
+  feedItemToWork,
+  loadContractSchemas,
+  sourceConfigToGraphSource,
+  stableHash
+} = require("./src/intel-graph");
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
@@ -158,6 +167,79 @@ async function fetchText(url) {
 
 function loadSources() {
   return readJson(SOURCE_PATH).sources;
+}
+
+function graphSourcesPayload() {
+  const sources = loadSources().map((source) => sourceConfigToGraphSource(source));
+
+  return {
+    ok: true,
+    schema_version: 1,
+    generatedAt: new Date().toISOString(),
+    itemCount: sources.length,
+    sources
+  };
+}
+
+function graphContractsPayload() {
+  const schemas = loadContractSchemas(ROOT);
+  const contracts = Object.entries(CONTRACT_FILES).map(([key, fileName]) => ({
+    key,
+    file: `contracts/${fileName}`,
+    id: schemas[key].$id,
+    title: schemas[key].title
+  }));
+
+  return {
+    ok: true,
+    schema_version: 1,
+    generatedAt: new Date().toISOString(),
+    itemCount: contracts.length,
+    contracts
+  };
+}
+
+async function graphWorksPayload({ refresh = false } = {}) {
+  const feedPayload = await loadItems({ refresh });
+  const works = feedPayload.items.map(feedItemToWork);
+  const idempotencyKey = `feed-index:${stableHash(works.map((work) => work.id))}`;
+
+  return {
+    ok: true,
+    schema_version: 1,
+    generatedAt: feedPayload.generatedAt,
+    itemCount: works.length,
+    errors: feedPayload.errors,
+    import_run: createImportRun({
+      importerId: "news-reader.feed-index",
+      sourceKind: "feed",
+      sourceId: "configured-sources",
+      idempotencyKey,
+      status: feedPayload.errors.length ? "completed_with_errors" : "completed",
+      counts: {
+        seen: feedPayload.items.length,
+        created: 0,
+        updated: 0,
+        skipped: feedPayload.items.length,
+        blocked: 0
+      },
+      errors: feedPayload.errors.map((item) => ({
+        code: "feed_source_error",
+        message: item.message,
+        source_ref: item.source
+      }))
+    }),
+    dry_run_patch: createDryRunGraphPatch({
+      idempotencyKey,
+      operations: works.map((work) => ({
+        op: "upsert",
+        object_kind: "work",
+        object_id: work.id,
+        payload: work
+      }))
+    }),
+    works
+  };
 }
 
 function fixturePayload() {
@@ -355,9 +437,25 @@ async function handle(req, res) {
       return;
     }
 
+    if (requestUrl.pathname === "/api/graph/sources") {
+      sendJson(res, 200, graphSourcesPayload());
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/graph/contracts") {
+      sendJson(res, 200, graphContractsPayload());
+      return;
+    }
+
     if (requestUrl.pathname === "/api/items") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
       sendJson(res, 200, await loadItems({ refresh }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/graph/works") {
+      const refresh = requestUrl.searchParams.get("refresh") === "1";
+      sendJson(res, 200, await graphWorksPayload({ refresh }));
       return;
     }
 

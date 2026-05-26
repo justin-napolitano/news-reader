@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "kind": "claim",
+  "id": "claim:metadata-only",
+  "claim_type": "user_claim",
+  "text": "The reader should store metadata and user notes before it stores copyrighted article text.",
+  "status": "user_authored",
+  "confidence": 1,
+  "provenance": {
+    "authored_by": "user",
+    "evidence_refs": ["docs/project-intent.md"],
+    "assumptions": ["metadata_first_storage_policy"]
+  }
+}
+

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "source",
+  "id": "fixture-news",
+  "source_type": "publisher",
+  "name": "Fixture News",
+  "section": "Test",
+  "source_url": "https://example.com",
+  "feed_url": "https://example.com/feed.xml",
+  "allow_hosts": ["example.com"],
+  "tags": ["Test"],
+  "rights": {
+    "full_text_storage": "metadata_only",
+    "notes": "Fixture source stores metadata only."
+  },
+  "provenance": {
+    "imported_from": "test:fixture",
+    "evidence_refs": ["test/fixtures/intel-graph/source.json"]
+  }
+}
+
