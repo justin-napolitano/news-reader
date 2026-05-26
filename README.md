@@ -20,6 +20,36 @@ npm run dev
 
 Open `http://localhost:4175`.
 
+The reader is private by default. Login with username `admin` and set the passcode outside git:
+
+```bash
+NEWS_READER_ADMIN_PASSCODE=...
+NEWS_READER_SESSION_SECRET=...
+```
+
+Set `NEWS_READER_AUTH_REQUIRED=0` only for local unauthenticated development.
+
+## Deploy
+
+This repo includes a Vercel serverless entrypoint in `api/index.js` and routes all traffic through `vercel.json`.
+
+Target domain: `news.selectproj.com`.
+
+Required Vercel environment variables:
+
+- `NEWS_READER_ADMIN_PASSCODE`
+- `NEWS_READER_SESSION_SECRET`
+- `LIFE_GRAPH_API_BASE_URL`
+- `LIFE_GRAPH_WRITE_TOKEN`
+- `NEWS_READER_ITEMS_SOURCE=life_graph`
+
+Recommended production values:
+
+- `NEWS_READER_ADMIN_USER=admin`
+- `NEWS_READER_COOKIE_SECURE=1`
+
+`VERCEL=1` also makes cookies secure automatically.
+
 ## Sources
 
 Edit `data/sources.json`.

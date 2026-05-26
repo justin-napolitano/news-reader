@@ -36,6 +36,8 @@ const FEED_TTL_MS = 10 * 60 * 1000;
 const READ_TTL_MS = 20 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 12000;
 const USER_AGENT = "NewsReader/0.1 (+local personal reader)";
+const SESSION_COOKIE = "news_reader_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 let feedCache = { fetchedAt: 0, payload: null };
 const readCache = new Map();
@@ -73,7 +75,16 @@ function sendText(res, status, body, contentType = "text/plain; charset=utf-8") 
   res.end(body);
 }
 
-function readJsonBody(req) {
+function sendHtml(res, status, body, extraHeaders = {}) {
+  res.writeHead(status, {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    ...extraHeaders
+  });
+  res.end(body);
+}
+
+function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
 
@@ -84,17 +95,251 @@ function readJsonBody(req) {
       }
     });
     req.on("end", () => {
-      if (!body.trim()) {
-        resolve({});
-        return;
-      }
-      try {
-        resolve(JSON.parse(body));
-      } catch (_err) {
-        resolve({});
-      }
+      resolve(body);
     });
     req.on("error", reject);
+  });
+}
+
+async function readJsonBody(req) {
+  const body = await readRequestBody(req);
+
+  if (!body.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch (_err) {
+    return {};
+  }
+}
+
+async function readFormBody(req) {
+  const body = await readRequestBody(req);
+  return Object.fromEntries(new URLSearchParams(body));
+}
+
+function authConfig() {
+  const passcode = String(process.env.NEWS_READER_ADMIN_PASSCODE || "");
+  const required = process.env.NEWS_READER_AUTH_REQUIRED !== "0";
+
+  return {
+    adminUser: String(process.env.NEWS_READER_ADMIN_USER || "admin"),
+    cookieSecure:
+      process.env.NEWS_READER_COOKIE_SECURE === "1" ||
+      Boolean(process.env.VERCEL) ||
+      process.env.NODE_ENV === "production",
+    passcode,
+    required,
+    sessionSecret: String(process.env.NEWS_READER_SESSION_SECRET || passcode)
+  };
+}
+
+function parseCookies(header = "") {
+  return Object.fromEntries(
+    header
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const index = part.indexOf("=");
+        return index === -1
+          ? [part, ""]
+          : [decodeURIComponent(part.slice(0, index)), decodeURIComponent(part.slice(index + 1))];
+      })
+  );
+}
+
+function constantTimeEqual(left, right) {
+  const leftHash = crypto.createHash("sha256").update(String(left)).digest();
+  const rightHash = crypto.createHash("sha256").update(String(right)).digest();
+
+  return crypto.timingSafeEqual(leftHash, rightHash);
+}
+
+function signSession(payload, secret) {
+  const encodedPayload = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifySession(token, secret) {
+  if (!token || !secret || !token.includes(".")) {
+    return null;
+  }
+
+  const [encodedPayload, signature] = token.split(".");
+  const expected = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+
+  if (!constantTimeEqual(signature, expected)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+
+    if (!payload.exp || Number(payload.exp) < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+
+    return payload;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function sessionCookie(value, config) {
+  const parts = [
+    `${SESSION_COOKIE}=${encodeURIComponent(value)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${SESSION_TTL_SECONDS}`
+  ];
+
+  if (config.cookieSecure) {
+    parts.push("Secure");
+  }
+
+  return parts.join("; ");
+}
+
+function clearSessionCookie(config) {
+  return sessionCookie("", config).replace(`Max-Age=${SESSION_TTL_SECONDS}`, "Max-Age=0");
+}
+
+function isAuthorized(req) {
+  const config = authConfig();
+
+  if (!config.required) {
+    return true;
+  }
+
+  const cookies = parseCookies(req.headers.cookie || "");
+  const payload = verifySession(cookies[SESSION_COOKIE], config.sessionSecret);
+
+  return payload?.sub === config.adminUser;
+}
+
+function wantsJson(req, pathname) {
+  return pathname.startsWith("/api/") || String(req.headers.accept || "").includes("application/json");
+}
+
+function redirect(res, location, headers = {}) {
+  res.writeHead(303, {
+    location,
+    "cache-control": "no-store",
+    ...headers
+  });
+  res.end();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function handleUnauthorized(req, res, pathname) {
+  if (wantsJson(req, pathname)) {
+    sendJson(res, 401, {
+      ok: false,
+      status: "blocked",
+      blockers: [{ code: "news_reader_auth_required", message: "Log in as admin before using News Reader." }]
+    });
+    return;
+  }
+
+  redirect(res, `/login?next=${encodeURIComponent(pathname || "/")}`);
+}
+
+function loginPage({ error = "", configured = true, next = "/" } = {}) {
+  const config = authConfig();
+  const message = configured
+    ? "Enter the admin passcode."
+    : "Set NEWS_READER_ADMIN_PASSCODE before exposing this reader.";
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#047857" />
+    <title>News Reader Login</title>
+    <style>
+      :root { color-scheme: light; --paper: #f7f7f2; --ink: #11110f; --muted: #62625c; --line: #d8d6cf; --accent: #047857; --error: #9f1239; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 18px; color: var(--ink); background: var(--accent); text-rendering: geometricPrecision; }
+      main { width: min(100%, 420px); padding: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+      p, h1 { margin-top: 0; }
+      h1 { margin-bottom: 10px; font-size: clamp(38px, 12vw, 72px); line-height: 0.92; font-weight: 520; letter-spacing: 0; }
+      p { color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+      form { display: grid; gap: 12px; margin-top: 24px; }
+      label { display: grid; gap: 7px; color: var(--muted); font-size: 0.76rem; font-weight: 800; text-transform: uppercase; }
+      input { min-height: 44px; width: 100%; padding: 0 12px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+      button { min-height: 44px; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+      .error { color: var(--error); font-weight: 750; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>News Reader</h1>
+      <p>${escapeHtml(message)}</p>
+      ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
+      <form method="post" action="/login?next=${encodeURIComponent(safeNext)}">
+        <label>
+          Login
+          <input name="username" value="${escapeHtml(config.adminUser)}" autocomplete="username" />
+        </label>
+        <label>
+          Passcode
+          <input name="passcode" type="password" autocomplete="current-password" autofocus />
+        </label>
+        <button type="submit">Enter</button>
+      </form>
+    </main>
+  </body>
+</html>`;
+}
+
+async function handleLogin(req, res, requestUrl) {
+  const config = authConfig();
+  const next = requestUrl.searchParams.get("next") || "/";
+
+  if (req.method === "GET") {
+    sendHtml(res, 200, loginPage({ configured: Boolean(config.passcode), next }));
+    return;
+  }
+
+  if (req.method !== "POST") {
+    sendText(res, 405, "Method not allowed");
+    return;
+  }
+
+  if (!config.passcode) {
+    sendHtml(res, 503, loginPage({ configured: false, next }));
+    return;
+  }
+
+  const body = await readFormBody(req);
+  const username = String(body.username || "").trim();
+  const passcode = String(body.passcode || "");
+
+  if (!constantTimeEqual(username, config.adminUser) || !constantTimeEqual(passcode, config.passcode)) {
+    sendHtml(res, 401, loginPage({ error: "Invalid login.", configured: true, next }));
+    return;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const token = signSession({ sub: config.adminUser, iat: now, exp: now + SESSION_TTL_SECONDS }, config.sessionSecret);
+
+  redirect(res, next.startsWith("/") && !next.startsWith("//") ? next : "/", {
+    "set-cookie": sessionCookie(token, config)
   });
 }
 
@@ -784,13 +1029,30 @@ async function handle(req, res) {
   ]);
 
   try {
-    if (postOnlyPaths.has(requestUrl.pathname) && req.method !== "POST") {
-      sendJson(res, 405, { error: "Method not allowed" });
+    if (requestUrl.pathname === "/api/health") {
+      sendJson(res, 200, { ok: true });
       return;
     }
 
-    if (requestUrl.pathname === "/api/health") {
-      sendJson(res, 200, { ok: true });
+    if (requestUrl.pathname === "/login") {
+      await handleLogin(req, res, requestUrl);
+      return;
+    }
+
+    if (requestUrl.pathname === "/logout") {
+      redirect(res, "/login", {
+        "set-cookie": clearSessionCookie(authConfig())
+      });
+      return;
+    }
+
+    if (!isAuthorized(req)) {
+      handleUnauthorized(req, res, requestUrl.pathname);
+      return;
+    }
+
+    if (postOnlyPaths.has(requestUrl.pathname) && req.method !== "POST") {
+      sendJson(res, 405, { error: "Method not allowed" });
       return;
     }
 
@@ -923,6 +1185,13 @@ const server = http.createServer((req, res) => {
   handle(req, res);
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`News Reader running at http://${HOST}:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`News Reader running at http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  handle,
+  server
+};
