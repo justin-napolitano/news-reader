@@ -9,6 +9,7 @@ const {
   loadContractSchemas,
   sourceConfigToGraphSource
 } = require("../src/intel-graph");
+const { createLifeGraphDryRunImport } = require("../src/life-graph-adapter");
 
 const ROOT = path.resolve(__dirname, "..");
 const FIXTURE_DIR = path.join(ROOT, "test", "fixtures", "intel-graph");
@@ -21,6 +22,8 @@ const FIXTURE_SCHEMA_KEYS = {
   "graph-patch.json": "graph_patch",
   "import-run.json": "import_run",
   "intake-event.json": "intake_event",
+  "life-graph-import.json": "life_graph_import",
+  "life-graph-migration-manifest.json": "life_graph_migration_manifest",
   "project-connection.json": "project_connection",
   "relevance-result.json": "relevance_result",
   "source.json": "source",
@@ -88,6 +91,43 @@ function validateConfiguredSources(schemas) {
   });
 }
 
+function validateLifeGraphMigrations(schemas) {
+  const manifestPath = path.join(ROOT, "integrations", "life-graph", "migration-manifest.json");
+  const manifest = readJson(manifestPath);
+  assertValid(schemas.life_graph_migration_manifest, manifest, "life-graph:migration-manifest");
+
+  const forbiddenSql = [/\bDROP\s+TABLE\b/i, /\bTRUNCATE\b/i, /\bDELETE\s+FROM\b/i, /\bALTER\s+TABLE\b[\s\S]*?\bDROP\b/i];
+  const requiredFragments = [
+    "CREATE SCHEMA IF NOT EXISTS intel_graph",
+    "CREATE TABLE IF NOT EXISTS intel_graph.import_runs",
+    "CREATE TABLE IF NOT EXISTS intel_graph.graph_patches",
+    "CREATE TABLE IF NOT EXISTS intel_graph.sources",
+    "CREATE TABLE IF NOT EXISTS intel_graph.works",
+    "CREATE TABLE IF NOT EXISTS intel_graph.annotations",
+    "CREATE TABLE IF NOT EXISTS intel_graph.life_graph_mappings",
+    "idempotency_key TEXT NOT NULL UNIQUE",
+    "source_hash TEXT NOT NULL",
+    "REFERENCES public.life_graph_objects(id)"
+  ];
+
+  manifest.migrations.forEach((migration) => {
+    const migrationPath = path.join(ROOT, migration.file);
+    const sql = fs.readFileSync(migrationPath, "utf8");
+
+    requiredFragments.forEach((fragment) => {
+      if (!sql.includes(fragment)) {
+        throw new Error(`${migration.file} is missing required SQL fragment: ${fragment}`);
+      }
+    });
+
+    forbiddenSql.forEach((pattern) => {
+      if (pattern.test(sql)) {
+        throw new Error(`${migration.file} contains forbidden destructive SQL: ${pattern}`);
+      }
+    });
+  });
+}
+
 function validateGeneratedObjects(schemas) {
   const fixtureItem = {
     id: "fixture-story-one",
@@ -126,10 +166,25 @@ function validateGeneratedObjects(schemas) {
     },
     errors: []
   });
+  const source = sourceConfigToGraphSource({
+    id: "fixture-news",
+    name: "Fixture News",
+    section: "Test",
+    feedUrl: "https://example.com/feed.xml",
+    allowHosts: ["example.com"]
+  });
+  const lifeGraphImport = createLifeGraphDryRunImport({
+    sources: [source],
+    works: [work],
+    importRun: run,
+    graphPatch: patch,
+    generatedAt: "2026-05-26T12:00:00.000Z"
+  });
 
   assertValid(schemas.work, work, "generated:work");
   assertValid(schemas.graph_patch, patch, "generated:graph_patch");
   assertValid(schemas.import_run, run, "generated:import_run");
+  assertValid(schemas.life_graph_import, lifeGraphImport, "generated:life_graph_import");
 }
 
 function main() {
@@ -138,13 +193,14 @@ function main() {
   validateSchemas(schemas);
   validateFixtures(schemas);
   validateConfiguredSources(schemas);
+  validateLifeGraphMigrations(schemas);
   validateGeneratedObjects(schemas);
 
   console.log(
     JSON.stringify(
       {
         ok: true,
-        checked: ["schemas", "fixtures", "configured sources", "generated objects"],
+        checked: ["schemas", "fixtures", "configured sources", "life graph migrations", "generated objects"],
         schema_count: Object.keys(schemas).length
       },
       null,

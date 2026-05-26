@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://jnap.me/contracts/intel-graph/life-graph-migration-manifest.schema.json",
+  "title": "Intel Graph Life Graph Migration Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "target", "status", "migrations"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "target": { "type": "string", "const": "jnap-life-graph" },
+    "status": { "type": "string", "enum": ["proposed", "active", "superseded"] },
+    "migrations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "file", "applies_after", "creates", "mutation_policy", "apply_policy"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 },
+          "applies_after": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "creates": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "mutation_policy": {
+            "type": "string",
+            "enum": ["idempotent_schema_only", "idempotent_data_patch", "manual_review_required"]
+          },
+          "apply_policy": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

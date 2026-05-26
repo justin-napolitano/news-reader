@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "life_graph_import",
+  "id": "life_graph_import:fixture",
+  "target": "jnap-life-graph",
+  "mode": "dry_run",
+  "idempotency_key": "life-graph:intel-import:fixture",
+  "generated_at": "2026-05-26T12:00:00.000Z",
+  "source_hash": "fixturehash",
+  "migration_refs": [
+    {
+      "id": "003_news_reader_intel_intake",
+      "file": "integrations/life-graph/migrations/003_news_reader_intel_intake.sql",
+      "status": "proposed",
+      "applies_after": [
+        "001_life_graph_core.sql",
+        "002_life_graph_curation_promotion.sql"
+      ]
+    }
+  ],
+  "import_run": {
+    "kind": "import_run",
+    "id": "import_run:fixture"
+  },
+  "graph_patch": {
+    "kind": "graph_patch",
+    "id": "graph_patch:fixture"
+  },
+  "objects": [
+    {
+      "id": "intel.work.fixture",
+      "type": "life_object",
+      "title": "Fixture story",
+      "summary": "Fixture summary",
+      "visibility": "private",
+      "review_state": "discovered",
+      "tags": ["intel", "intel-work"],
+      "taxonomy": {
+        "kind": "life_object",
+        "status": "published",
+        "audiences": ["agents"],
+        "domains": ["intel"],
+        "facets": {
+          "category": "intel_work",
+          "privacy_tier": "private"
+        }
+      },
+      "provenance": {
+        "sources": [
+          {
+            "type": "other",
+            "url": "https://example.com/story",
+            "note": "Fixture"
+          }
+        ]
+      },
+      "projections": [],
+      "payload": {
+        "intel_graph_kind": "work"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_object_id": "intel.work.fixture",
+      "target_object_id": "intel.source.fixture",
+      "edge_type": "derived_from_source",
+      "payload": {
+        "relationship": "work_derived_from_source"
+      },
+      "source_hash": "fixtureedgehash"
+    }
+  ],
+  "audit": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 2,
+    "blocked": 0,
+    "notes": ["Dry-run fixture."]
+  }
+}

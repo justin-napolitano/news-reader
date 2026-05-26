@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "target": "jnap-life-graph",
+  "status": "proposed",
+  "migrations": [
+    {
+      "id": "003_news_reader_intel_intake",
+      "file": "integrations/life-graph/migrations/003_news_reader_intel_intake.sql",
+      "applies_after": [
+        "001_life_graph_core.sql",
+        "002_life_graph_curation_promotion.sql"
+      ],
+      "creates": [
+        "intel_graph.import_runs",
+        "intel_graph.graph_patches",
+        "intel_graph.sources",
+        "intel_graph.works",
+        "intel_graph.annotations",
+        "intel_graph.life_graph_mappings"
+      ],
+      "mutation_policy": "idempotent_schema_only",
+      "apply_policy": "copy_or_vendor_into_jnap-life-graph_after_review"
+    }
+  ]
+}

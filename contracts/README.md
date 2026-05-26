@@ -10,6 +10,7 @@ They are intentionally storage-neutral. The current reader can normalize sources
 - All persistent or replayable objects need stable ids.
 - Graph mutations must go through `graph-patch`.
 - Import runs must declare idempotency keys and audit counts.
+- Life Graph imports must stay dry-runnable until the LifeDB migration has been reviewed and applied.
 - Relevance outputs are advisory unless a separate graph patch applies the result.
 - Copyrighted article full text is not persisted by default.
 
@@ -25,5 +26,6 @@ They are intentionally storage-neutral. The current reader can normalize sources
 - `project-connection.schema.json`
 - `graph-patch.schema.json`
 - `import-run.schema.json`
+- `life-graph-import.schema.json`
+- `life-graph-migration-manifest.schema.json`
 - `relevance-result.schema.json`
-
