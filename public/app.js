@@ -1,16 +1,25 @@
 const state = {
   articles: [],
   sources: [],
-  activeSource: "all"
+  activeSource: "all",
+  activeView: "unread"
 };
 
 const els = {
   refresh: document.querySelector("#refresh-button"),
+  viewStrip: document.querySelector("#view-strip"),
   sourceStrip: document.querySelector("#source-strip"),
   status: document.querySelector("#feed-status"),
   count: document.querySelector("#feed-count"),
   list: document.querySelector("#article-list")
 };
+
+const views = [
+  { id: "unread", name: "Unread" },
+  { id: "saved", name: "Saved" },
+  { id: "read", name: "Read" },
+  { id: "archived", name: "Archived" }
+];
 
 function formatDate(value) {
   if (!value) {
@@ -44,6 +53,23 @@ function articleHref(article) {
   return `/reader.html?${params.toString()}`;
 }
 
+function renderViews() {
+  els.viewStrip.innerHTML = "";
+  views.forEach((view) => {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = `view-filter${state.activeView === view.id ? " is-active" : ""}`;
+    button.textContent = view.name;
+    button.addEventListener("click", () => {
+      state.activeView = view.id;
+      renderViews();
+      loadArticles();
+    });
+    els.viewStrip.appendChild(button);
+  });
+}
+
 function renderSources() {
   const buttons = [
     { id: "all", name: "All" },
@@ -66,6 +92,38 @@ function renderSources() {
   });
 }
 
+function actionForView(article) {
+  if (state.activeView === "saved" || article.readerState?.is_saved) {
+    return { action: "unsave", label: "Unsave" };
+  }
+  if (state.activeView === "archived" || article.readerState?.is_hidden) {
+    return { action: "restore", label: "Restore" };
+  }
+  return { action: "save", label: "Save" };
+}
+
+async function updateArticleState(article, action, { silent = false } = {}) {
+  if (!article.id || !article.readerState) {
+    return;
+  }
+
+  try {
+    await fetch("/api/life-graph/intel/reader/state", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ work_id: article.id, action })
+    });
+    if (!silent) {
+      await loadArticles();
+    }
+  } catch (err) {
+    if (!silent) {
+      els.status.textContent = err instanceof Error ? err.message : String(err);
+      els.status.classList.add("error");
+    }
+  }
+}
+
 function renderArticles() {
   const articles = filteredArticles();
 
@@ -78,9 +136,19 @@ function renderArticles() {
     const meta = document.createElement("div");
     const title = document.createElement("span");
     const excerpt = document.createElement("p");
+    const controls = document.createElement("div");
+    const primaryAction = document.createElement("button");
+    const secondaryAction = document.createElement("button");
+    const action = actionForView(article);
+    const canUpdateState = Boolean(article.readerState?.work_id);
 
     link.href = articleHref(article);
     link.className = "article-card";
+    link.addEventListener("click", () => {
+      if (state.activeView === "unread") {
+        updateArticleState(article, "read", { silent: true });
+      }
+    });
     meta.className = "article-source";
     meta.textContent = [article.source, article.section, formatDate(article.publishedAt)].filter(Boolean).join(" / ");
     title.className = "article-title";
@@ -89,6 +157,18 @@ function renderArticles() {
     excerpt.textContent = article.excerpt || "No feed summary available.";
     link.append(meta, title, excerpt);
     li.appendChild(link);
+    if (canUpdateState) {
+      controls.className = "article-actions";
+      primaryAction.type = "button";
+      primaryAction.textContent = action.label;
+      primaryAction.addEventListener("click", () => updateArticleState(article, action.action));
+      secondaryAction.type = "button";
+      secondaryAction.textContent = state.activeView === "archived" ? "Archive" : "Dismiss";
+      secondaryAction.disabled = state.activeView === "archived";
+      secondaryAction.addEventListener("click", () => updateArticleState(article, "dismiss"));
+      controls.append(primaryAction, secondaryAction);
+      li.appendChild(controls);
+    }
     els.list.appendChild(li);
   });
 }
@@ -105,7 +185,13 @@ async function loadArticles({ refresh = false } = {}) {
   els.status.textContent = refresh ? "Refreshing..." : "Loading feed...";
 
   try {
-    const response = await fetch(`/api/items${refresh ? "?refresh=1" : ""}`);
+    const params = new URLSearchParams({ view: state.activeView });
+
+    if (refresh) {
+      params.set("refresh", "1");
+    }
+
+    const response = await fetch(`/api/items?${params.toString()}`);
     const payload = await response.json();
 
     if (!response.ok) {
@@ -125,5 +211,6 @@ async function loadArticles({ refresh = false } = {}) {
 
 els.refresh.addEventListener("click", () => loadArticles({ refresh: true }));
 
+renderViews();
 loadSources();
 loadArticles();

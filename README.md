@@ -48,6 +48,9 @@ This repo now exposes read-only normalized graph objects:
 - `POST /api/life-graph/import/apply`
 - `GET /api/life-graph/intel/sources`
 - `GET /api/life-graph/intel/works`
+- `GET /api/life-graph/intel/reader/works`
+- `POST /api/life-graph/intel/reader/state`
+- `POST /api/life-graph/intel/retention/apply`
 
 Contracts live in `contracts/`. Fixtures live in `test/fixtures/intel-graph/`.
 
@@ -76,9 +79,15 @@ npm run life-graph:status
 npm run life-graph:dry-run
 npm run life-graph:push-dry-run
 npm run life-graph:apply
+npm run life-graph:reader-works
+npm run life-graph:retention
 npm run life-graph:sources
 npm run life-graph:works
 ```
+
+When `NEWS_READER_ITEMS_SOURCE=life_graph`, the front page defaults to the unread inbox. Clicking an article marks it
+read, `Save` keeps it in the saved view, `Dismiss` hides it from the inbox, and `Archived` exposes hidden items for review.
+Retention is dry-run first through `npm run life-graph:retention`; Life Graph owns the durable policy and state tables.
 
 Run contract validation with:
 

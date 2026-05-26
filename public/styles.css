@@ -100,13 +100,22 @@ h2 {
   font-weight: 700;
 }
 
+.view-strip,
 .source-strip {
   display: flex;
   gap: 8px;
-  padding: 0 0 18px;
   overflow-x: auto;
 }
 
+.view-strip {
+  padding: 0 0 10px;
+}
+
+.source-strip {
+  padding: 0 0 18px;
+}
+
+.view-filter,
 .source-filter {
   flex: 0 0 auto;
   min-height: 32px;
@@ -119,6 +128,7 @@ h2 {
   font-weight: 700;
 }
 
+.view-filter.is-active,
 .source-filter.is-active {
   color: var(--paper);
   background: var(--accent);
@@ -150,10 +160,9 @@ h2 {
 .article-card {
   display: block;
   width: 100%;
-  padding: clamp(18px, 3vw, 32px) 0;
+  padding: clamp(18px, 3vw, 28px) 0 8px;
   color: inherit;
   background: transparent;
-  border-bottom: 1px solid var(--line);
   text-align: left;
 }
 
@@ -186,6 +195,38 @@ h2 {
   color: var(--muted);
   font-size: clamp(0.95rem, 1.8vw, 1.1rem);
   line-height: 1.45;
+}
+
+.article-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.article-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 clamp(18px, 3vw, 28px);
+}
+
+.article-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.article-actions button:hover,
+.article-actions button:focus-visible {
+  color: var(--paper);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.article-actions button:disabled {
+  display: none;
 }
 
 .reader-topbar {

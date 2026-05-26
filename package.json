@@ -9,6 +9,8 @@
     "life-graph:apply": "node scripts/life-graph-client.js apply",
     "life-graph:dry-run": "node scripts/life-graph-client.js local-dry-run",
     "life-graph:push-dry-run": "node scripts/life-graph-client.js remote-dry-run",
+    "life-graph:reader-works": "node scripts/life-graph-client.js reader-works",
+    "life-graph:retention": "node scripts/life-graph-client.js retention-dry-run",
     "life-graph:sources": "node scripts/life-graph-client.js sources",
     "life-graph:status": "node scripts/life-graph-client.js status",
     "life-graph:works": "node scripts/life-graph-client.js works",

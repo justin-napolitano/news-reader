@@ -179,6 +179,46 @@ async function listLifeGraphIntelWorks({ sourceId = "", limit = 160, env = proce
   });
 }
 
+async function listLifeGraphReaderWorks({ view = "unread", sourceId = "", limit = 160, env = process.env } = {}) {
+  const params = new URLSearchParams({ view, limit: String(limit) });
+
+  if (sourceId) {
+    params.set("source_id", sourceId);
+  }
+
+  return callLifeGraph(`/api/intel/reader/works?${params.toString()}`, {
+    method: "GET",
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function updateLifeGraphReaderState({ workId, action, actorId = "user:default", payload = {}, env = process.env }) {
+  return callLifeGraph("/api/intel/reader/state", {
+    method: "POST",
+    body: {
+      work_id: workId,
+      action,
+      actor_id: actorId,
+      payload
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function applyLifeGraphRetention({ apply = false, actorId = "user:default", env = process.env } = {}) {
+  return callLifeGraph("/api/intel/retention/apply", {
+    method: "POST",
+    body: {
+      apply,
+      actor_id: actorId
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
 function intelSourceToReaderSource(source) {
   return {
     id: source.id,
@@ -190,6 +230,8 @@ function intelSourceToReaderSource(source) {
 }
 
 function intelWorkToReaderItem(work) {
+  const readerState = work.reader_state && typeof work.reader_state === "object" ? work.reader_state : {};
+
   return {
     id: work.id,
     sourceId: work.source_id,
@@ -198,7 +240,8 @@ function intelWorkToReaderItem(work) {
     title: work.title,
     url: work.url,
     publishedAt: work.published_at || "",
-    excerpt: work.excerpt || ""
+    excerpt: work.excerpt || "",
+    readerState
   };
 }
 
@@ -206,11 +249,14 @@ module.exports = {
   callLifeGraph,
   intelSourceToReaderSource,
   intelWorkToReaderItem,
+  applyLifeGraphRetention,
   lifeGraphConfig,
   lifeGraphConfigStatus,
   lifeGraphConfigured,
   listLifeGraphIntelSources,
   listLifeGraphIntelWorks,
+  listLifeGraphReaderWorks,
   remoteData,
-  sendNewsReaderImport
+  sendNewsReaderImport,
+  updateLifeGraphReaderState
 };
