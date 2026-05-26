@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11110f" />
+    <title>Reader / News Reader</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell reader-page">
+      <header class="reader-topbar">
+        <a class="back-link" href="/">Back</a>
+        <a id="reader-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+      </header>
+
+      <article class="reader-panel" aria-live="polite">
+        <div class="reader-content">
+          <div class="reader-head">
+            <p class="eyebrow" id="reader-source">Reader</p>
+            <h1 id="reader-title">Loading story...</h1>
+          </div>
+          <div id="reader-body" class="reader-body">
+            <p>Extracting readable text...</p>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <script src="/reader.js"></script>
+  </body>
+</html>

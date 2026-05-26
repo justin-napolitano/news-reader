@@ -19,33 +19,12 @@
 
       <section class="source-strip" id="source-strip" aria-label="Sources"></section>
 
-      <section class="reader-layout">
-        <aside class="feed-panel" aria-label="Articles">
-          <div class="feed-meta">
-            <span id="feed-status">Loading sources...</span>
-            <span id="feed-count"></span>
-          </div>
-          <ol id="article-list" class="article-list"></ol>
-        </aside>
-
-        <article class="reader-panel" aria-live="polite">
-          <div class="reader-empty" id="reader-empty">
-            <p class="eyebrow">Choose a story</p>
-            <h2>Clean text, source intact.</h2>
-            <p>
-              This reader indexes RSS feeds and extracts readable text on demand. It keeps the original source link
-              visible and does not store article copies.
-            </p>
-          </div>
-          <div class="reader-content" id="reader-content" hidden>
-            <div class="reader-head">
-              <p class="eyebrow" id="reader-source"></p>
-              <h2 id="reader-title"></h2>
-              <a id="reader-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
-            </div>
-            <div id="reader-body" class="reader-body"></div>
-          </div>
-        </article>
+      <section class="feed-page" aria-label="Articles">
+        <div class="feed-meta">
+          <span id="feed-status">Loading sources...</span>
+          <span id="feed-count"></span>
+        </div>
+        <ol id="article-list" class="article-list"></ol>
       </section>
     </main>
 

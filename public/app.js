@@ -1,8 +1,7 @@
 const state = {
   articles: [],
   sources: [],
-  activeSource: "all",
-  activeId: null
+  activeSource: "all"
 };
 
 const els = {
@@ -10,13 +9,7 @@ const els = {
   sourceStrip: document.querySelector("#source-strip"),
   status: document.querySelector("#feed-status"),
   count: document.querySelector("#feed-count"),
-  list: document.querySelector("#article-list"),
-  empty: document.querySelector("#reader-empty"),
-  content: document.querySelector("#reader-content"),
-  readerSource: document.querySelector("#reader-source"),
-  readerTitle: document.querySelector("#reader-title"),
-  readerLink: document.querySelector("#reader-link"),
-  readerBody: document.querySelector("#reader-body")
+  list: document.querySelector("#article-list")
 };
 
 function formatDate(value) {
@@ -38,6 +31,17 @@ function filteredArticles() {
   }
 
   return state.articles.filter((article) => article.sourceId === state.activeSource);
+}
+
+function articleHref(article) {
+  const params = new URLSearchParams({
+    url: article.url,
+    title: article.title,
+    source: article.source,
+    section: article.section || ""
+  });
+
+  return `/reader.html?${params.toString()}`;
 }
 
 function renderSources() {
@@ -70,80 +74,23 @@ function renderArticles() {
 
   articles.forEach((article) => {
     const li = document.createElement("li");
-    const button = document.createElement("button");
+    const link = document.createElement("a");
     const meta = document.createElement("div");
     const title = document.createElement("span");
     const excerpt = document.createElement("p");
 
-    button.type = "button";
-    button.className = `article-card${state.activeId === article.id ? " is-active" : ""}`;
+    link.href = articleHref(article);
+    link.className = "article-card";
     meta.className = "article-source";
     meta.textContent = [article.source, article.section, formatDate(article.publishedAt)].filter(Boolean).join(" / ");
     title.className = "article-title";
     title.textContent = article.title;
     excerpt.className = "article-excerpt";
     excerpt.textContent = article.excerpt || "No feed summary available.";
-    button.append(meta, title, excerpt);
-    button.addEventListener("click", () => openArticle(article));
-    li.appendChild(button);
+    link.append(meta, title, excerpt);
+    li.appendChild(link);
     els.list.appendChild(li);
   });
-}
-
-function setReaderLoading(article) {
-  state.activeId = article.id;
-  renderArticles();
-  els.empty.hidden = true;
-  els.content.hidden = false;
-  els.readerSource.textContent = [article.source, article.section].filter(Boolean).join(" / ");
-  els.readerTitle.textContent = article.title;
-  els.readerLink.href = article.url;
-  els.readerBody.innerHTML = "<p>Extracting readable text...</p>";
-}
-
-function renderReaderText(text) {
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-
-  els.readerBody.innerHTML = "";
-  paragraphs.forEach((paragraph) => {
-    const p = document.createElement("p");
-
-    p.textContent = paragraph;
-    els.readerBody.appendChild(p);
-  });
-}
-
-async function openArticle(article) {
-  setReaderLoading(article);
-
-  try {
-    const response = await fetch(`/api/read?url=${encodeURIComponent(article.url)}`);
-    const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload.error || "Unable to read article.");
-    }
-
-    els.readerTitle.textContent = payload.title || article.title;
-    renderReaderText(payload.text || article.excerpt || "No readable text extracted. Open the original source.");
-  } catch (err) {
-    els.readerBody.innerHTML = "";
-    const p = document.createElement("p");
-
-    p.className = "error";
-    p.textContent = err instanceof Error ? err.message : String(err);
-    els.readerBody.appendChild(p);
-
-    if (article.excerpt) {
-      const fallback = document.createElement("p");
-
-      fallback.textContent = article.excerpt;
-      els.readerBody.appendChild(fallback);
-    }
-  }
 }
 
 async function loadSources() {

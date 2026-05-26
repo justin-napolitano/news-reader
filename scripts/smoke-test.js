@@ -46,6 +46,12 @@ async function main() {
     throw new Error("home page did not render News Reader");
   }
 
+  const reader = await request("/reader.html?url=https%3A%2F%2Fexample.com%2Fstory-one&title=Fixture");
+
+  if (!reader.text.includes("Open original") || !reader.text.includes("/reader.js")) {
+    throw new Error("reader page did not render the article reader shell");
+  }
+
   const sources = await request("/api/sources");
   const sourcePayload = JSON.parse(sources.text);
 
@@ -60,7 +66,7 @@ async function main() {
     throw new Error("fixture feed did not return two items");
   }
 
-  console.log(JSON.stringify({ ok: true, checked: ["home", "sources", "fixture feed"] }, null, 2));
+  console.log(JSON.stringify({ ok: true, checked: ["home", "reader page", "sources", "fixture feed"] }, null, 2));
 }
 
 main()
