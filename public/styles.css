@@ -194,12 +194,17 @@ h2 {
 }
 
 .reader-panel {
+  --reader-panel-top: 170px;
   position: sticky;
-  top: 170px;
+  top: var(--reader-panel-top);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100svh - var(--reader-panel-top) - 28px);
   padding: clamp(20px, 3vw, 38px);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+  overflow: hidden;
 }
 
 .reader-empty {
@@ -214,6 +219,7 @@ h2 {
 }
 
 .reader-head {
+  flex: 0 0 auto;
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
 }
@@ -226,13 +232,26 @@ h2 {
   font-weight: 800;
 }
 
+.reader-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .reader-body {
   max-width: 780px;
+  min-height: 0;
   padding-top: 22px;
+  padding-right: 10px;
   color: #22221f;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(18px, 2vw, 22px);
   line-height: 1.58;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .reader-body p {
@@ -263,6 +282,12 @@ h2 {
 
   .reader-panel {
     position: static;
+    max-height: none;
     padding: 20px;
+    overflow: visible;
+  }
+
+  .reader-body {
+    overflow: visible;
   }
 }
