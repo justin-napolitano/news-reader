@@ -5,6 +5,13 @@ A small local news reader for high-quality sources without ad-heavy article page
 The app indexes configured RSS/Atom feeds, shows a clean feed, and extracts readable article text on demand. It keeps the
 original source URL visible and does not persist extracted article copies.
 
+## Direction
+
+This repo is the first reader/client for the Open Intel Graph: a user-owned intake graph for sources, works, reading events,
+annotations, and project connections.
+
+Start with [Project Intent](docs/project-intent.md), then use the [research system](docs/research/README.md), [bibliography](docs/research/bibliography.md), and [exec plans](docs/execplans/README.md) to plan implementation slices.
+
 ## Run
 
 ```bash
