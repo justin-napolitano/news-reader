@@ -12,6 +12,7 @@ const {
   sourceConfigToGraphSource,
   stableHash
 } = require("./src/intel-graph");
+const { createLifeGraphDryRunImport } = require("./src/life-graph-adapter");
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
@@ -37,6 +38,18 @@ function sendJson(res, status, payload) {
     "cache-control": "no-store"
   });
   res.end(body);
+}
+
+function apiResponse(command, data, { blockers = [], provenance = [], next_actions = [], status = "ok" } = {}) {
+  return {
+    ok: blockers.length === 0 && status === "ok",
+    status: blockers.length ? "blocked" : status,
+    command,
+    blockers,
+    data,
+    provenance,
+    next_actions
+  };
 }
 
 function sendText(res, status, body, contentType = "text/plain; charset=utf-8") {
@@ -199,6 +212,25 @@ function graphContractsPayload() {
   };
 }
 
+function lifeGraphMigrationsPayload() {
+  const manifest = readJson(path.join(ROOT, "integrations", "life-graph", "migration-manifest.json"));
+  const schemaPlan = readJson(path.join(ROOT, "integrations", "life-graph", "intel-schema.json"));
+
+  return apiResponse("life_graph_migrations", { manifest, schema_plan: schemaPlan }, {
+    provenance: [
+      { type: "repo_local", source: "integrations/life-graph/migration-manifest.json" },
+      { type: "repo_local", source: "integrations/life-graph/intel-schema.json" },
+      { type: "repo_local", source: "integrations/life-graph/migrations/003_news_reader_intel_intake.sql" }
+    ],
+    next_actions: [
+      {
+        action: "review_migration",
+        description: "Review the proposed migration before copying or vendoring it into jnap-life-graph."
+      }
+    ]
+  });
+}
+
 async function graphWorksPayload({ refresh = false } = {}) {
   const feedPayload = await loadItems({ refresh });
   const works = feedPayload.items.map(feedItemToWork);
@@ -240,6 +272,67 @@ async function graphWorksPayload({ refresh = false } = {}) {
     }),
     works
   };
+}
+
+async function lifeGraphImportDryRunPayload({ refresh = false } = {}) {
+  const feedPayload = await loadItems({ refresh });
+  const sources = loadSources().map((source) => sourceConfigToGraphSource(source));
+  const works = feedPayload.items.map(feedItemToWork);
+  const idempotencyKey = `feed-index:${stableHash(works.map((work) => work.id))}`;
+  const importRun = createImportRun({
+    importerId: "news-reader.feed-index",
+    sourceKind: "feed",
+    sourceId: "configured-sources",
+    idempotencyKey,
+    status: feedPayload.errors.length ? "completed_with_errors" : "completed",
+    counts: {
+      seen: feedPayload.items.length,
+      created: 0,
+      updated: 0,
+      skipped: feedPayload.items.length,
+      blocked: 0
+    },
+    errors: feedPayload.errors.map((item) => ({
+      code: "feed_source_error",
+      message: item.message,
+      source_ref: item.source
+    }))
+  });
+  const graphPatch = createDryRunGraphPatch({
+    idempotencyKey,
+    operations: works.map((work) => ({
+      op: "upsert",
+      object_kind: "work",
+      object_id: work.id,
+      payload: work
+    }))
+  });
+  const lifeGraphImport = createLifeGraphDryRunImport({
+    sources,
+    works,
+    importRun,
+    graphPatch,
+    generatedAt: feedPayload.generatedAt
+  });
+
+  return apiResponse("life_graph_import_dry_run", lifeGraphImport, {
+    provenance: [
+      { type: "repo_local", source: "data/sources.json" },
+      { type: "repo_local", source: "contracts/life-graph-import.schema.json" },
+      { type: "repo_local", source: "integrations/life-graph/migration-manifest.json" },
+      { type: "repo_local", source: "jnap-life-graph:schemas/life-graph-object.schema.json" }
+    ],
+    next_actions: [
+      {
+        action: "review_migration",
+        description: "Review the proposed Life Graph migration before applying it in jnap-life-graph."
+      },
+      {
+        action: "build_apply_mode",
+        description: "Add an authenticated apply endpoint only after migration review and write-token handling."
+      }
+    ]
+  });
 }
 
 function fixturePayload() {
@@ -447,6 +540,11 @@ async function handle(req, res) {
       return;
     }
 
+    if (requestUrl.pathname === "/api/life-graph/migrations") {
+      sendJson(res, 200, lifeGraphMigrationsPayload());
+      return;
+    }
+
     if (requestUrl.pathname === "/api/items") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
       sendJson(res, 200, await loadItems({ refresh }));
@@ -456,6 +554,12 @@ async function handle(req, res) {
     if (requestUrl.pathname === "/api/graph/works") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
       sendJson(res, 200, await graphWorksPayload({ refresh }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/import/dry-run") {
+      const refresh = requestUrl.searchParams.get("refresh") === "1";
+      sendJson(res, 200, await lifeGraphImportDryRunPayload({ refresh }));
       return;
     }
 

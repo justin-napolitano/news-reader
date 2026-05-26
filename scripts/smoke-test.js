@@ -26,8 +26,8 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function request(path) {
-  const response = await fetch(`${BASE_URL}${path}`);
+async function request(path, options = {}) {
+  const response = await fetch(`${BASE_URL}${path}`, options);
   const text = await response.text();
 
   if (!response.ok) {
@@ -102,6 +102,43 @@ async function main() {
     throw new Error("graph works endpoint returned unstable idempotency keys for the same fixture payload");
   }
 
+  const lifeGraphMigrations = await request("/api/life-graph/migrations");
+  const lifeGraphMigrationPayload = JSON.parse(lifeGraphMigrations.text);
+
+  if (!lifeGraphMigrationPayload.ok || lifeGraphMigrationPayload.data?.manifest?.target !== "jnap-life-graph") {
+    throw new Error("life graph migration endpoint did not return the expected manifest");
+  }
+
+  if (lifeGraphMigrationPayload.data?.schema_plan?.schema_name !== "intel_graph") {
+    throw new Error("life graph migration endpoint did not return the intel schema plan");
+  }
+
+  const lifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
+  const lifeGraphDryRunPayload = JSON.parse(lifeGraphDryRun.text);
+
+  if (!lifeGraphDryRunPayload.ok || lifeGraphDryRunPayload.data?.kind !== "life_graph_import") {
+    throw new Error("life graph dry-run endpoint did not return a life_graph_import payload");
+  }
+
+  if (lifeGraphDryRunPayload.data.mode !== "dry_run" || lifeGraphDryRunPayload.data.audit?.created !== 0) {
+    throw new Error("life graph dry-run endpoint attempted non-dry-run semantics");
+  }
+
+  if (!lifeGraphDryRunPayload.data.objects?.some((object) => object.type === "life_object")) {
+    throw new Error("life graph dry-run endpoint did not produce Life Graph objects");
+  }
+
+  const secondLifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
+  const secondLifeGraphDryRunPayload = JSON.parse(secondLifeGraphDryRun.text);
+
+  if (secondLifeGraphDryRunPayload.data?.idempotency_key !== lifeGraphDryRunPayload.data?.idempotency_key) {
+    throw new Error("life graph dry-run endpoint returned unstable idempotency keys");
+  }
+
+  if (secondLifeGraphDryRunPayload.data?.source_hash !== lifeGraphDryRunPayload.data?.source_hash) {
+    throw new Error("life graph dry-run endpoint returned unstable source hashes");
+  }
+
   console.log(
     JSON.stringify(
       {
@@ -114,7 +151,9 @@ async function main() {
           "graph sources",
           "graph contracts",
           "graph works",
-          "idempotency"
+          "idempotency",
+          "life graph migrations",
+          "life graph dry-run import"
         ]
       },
       null,

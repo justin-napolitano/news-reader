@@ -41,8 +41,17 @@ This repo now exposes read-only normalized graph objects:
 - `GET /api/graph/sources`
 - `GET /api/graph/contracts`
 - `GET /api/graph/works`
+- `GET /api/life-graph/migrations`
+- `POST /api/life-graph/import/dry-run`
 
 Contracts live in `contracts/`. Fixtures live in `test/fixtures/intel-graph/`.
+
+The Life Graph adapter is intentionally dry-run first. Raw intel is modeled in a proposed LifeDB `intel_graph` schema, while
+selected records can later be promoted into Life Graph `life_object` records and `derived_from_source` edges. See
+`docs/schema/intel-graph-lifedb.md`.
+
+Proposed LifeDB migrations live in `integrations/life-graph/migrations/`. They are review artifacts for
+`jnap-life-graph`; copy or vendor them there only after reviewing the migration manifest.
 
 Run contract validation with:
 

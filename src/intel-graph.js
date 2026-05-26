@@ -8,7 +8,10 @@ const CONTRACT_FILES = {
   entity: "entity.schema.json",
   graph_patch: "graph-patch.schema.json",
   import_run: "import-run.schema.json",
+  intel_graph_lifedb_schema: "intel-graph-lifedb-schema.schema.json",
   intake_event: "intake-event.schema.json",
+  life_graph_import: "life-graph-import.schema.json",
+  life_graph_migration_manifest: "life-graph-migration-manifest.schema.json",
   project_connection: "project-connection.schema.json",
   relevance_result: "relevance-result.schema.json",
   source: "source.schema.json",
@@ -29,6 +32,25 @@ function loadContractSchemas(root = path.resolve(__dirname, "..")) {
 
 function stableHash(parts) {
   return crypto.createHash("sha1").update(parts.filter(Boolean).join("|")).digest("hex").slice(0, 16);
+}
+
+function stableJsonStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJsonStringify).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJsonStringify(value[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function stableJsonHash(value) {
+  return crypto.createHash("sha1").update(stableJsonStringify(value)).digest("hex").slice(0, 16);
 }
 
 function graphId(prefix, parts) {
@@ -144,5 +166,7 @@ module.exports = {
   graphId,
   loadContractSchemas,
   sourceConfigToGraphSource,
-  stableHash
+  stableHash,
+  stableJsonHash,
+  stableJsonStringify
 };

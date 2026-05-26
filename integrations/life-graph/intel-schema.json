@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "id": "intel-graph-lifedb-schema.v1",
+  "target": "jnap-life-graph",
+  "schema_name": "intel_graph",
+  "status": "proposed",
+  "canonicality": {
+    "raw_intel": "intel_graph",
+    "curated_cross_domain_objects": "public.life_graph_objects",
+    "public_projection": "public.life_graph_projections"
+  },
+  "research_refs": [
+    "bib-rss-2",
+    "bib-atom-rfc-4287",
+    "bib-schema-creativework",
+    "bib-web-annotation",
+    "bib-prov-dm",
+    "bib-activitystreams",
+    "bib-cloudevents",
+    "bib-openlineage",
+    "local-researcher-source-provenance",
+    "local-resume-agent-architecture"
+  ],
+  "tables": [
+    {
+      "name": "intel_graph.import_runs",
+      "purpose": "Audit each source polling, file import, or agent import execution.",
+      "identity": "id plus unique idempotency_key",
+      "evidence_refs": ["bib-cloudevents", "bib-openlineage"]
+    },
+    {
+      "name": "intel_graph.graph_patches",
+      "purpose": "Store dry-run/apply graph mutation envelopes before touching canonical graph objects.",
+      "identity": "id plus unique idempotency_key",
+      "evidence_refs": ["local-researcher-local-orchestration-api", "local-codex-biblio-execution-observability"]
+    },
+    {
+      "name": "intel_graph.sources",
+      "purpose": "Track publishers, feeds, libraries, people, APIs, and other intake sources.",
+      "identity": "stable configured or provider source id",
+      "evidence_refs": ["bib-rss-2", "bib-atom-rfc-4287", "bib-prov-dm"]
+    },
+    {
+      "name": "intel_graph.works",
+      "purpose": "Track articles, books, papers, posts, videos, podcast episodes, repositories, documents, and notes.",
+      "identity": "stable work id with source_id and url uniqueness",
+      "evidence_refs": ["bib-schema-creativework", "bib-schema-article", "bib-schema-book"]
+    },
+    {
+      "name": "intel_graph.work_segments",
+      "purpose": "Track chapters, paragraphs, transcript spans, quoted ranges, and durable excerpt anchors.",
+      "identity": "work_id, segment_type, position, and content_ref",
+      "evidence_refs": ["bib-web-annotation", "bib-schema-creativework"]
+    },
+    {
+      "name": "intel_graph.intake_events",
+      "purpose": "Track discovered, opened, read, saved, dismissed, queued, cited, and annotated events.",
+      "identity": "unique idempotency_key",
+      "evidence_refs": ["bib-activitystreams", "bib-cloudevents", "bib-trace-context"]
+    },
+    {
+      "name": "intel_graph.annotations",
+      "purpose": "Track notes, highlights, questions, summaries, quotes, and comments against works or segments.",
+      "identity": "stable annotation id",
+      "evidence_refs": ["bib-web-annotation"]
+    },
+    {
+      "name": "intel_graph.entities",
+      "purpose": "Track people, organizations, places, products, repositories, concepts, and other named entities.",
+      "identity": "stable entity id plus aliases and identifiers",
+      "evidence_refs": ["bib-prov-dm", "local-researcher-source-provenance"]
+    },
+    {
+      "name": "intel_graph.topics",
+      "purpose": "Track controlled and emergent topics for retrieval, curation, and explanation.",
+      "identity": "stable topic id with optional parent topic",
+      "evidence_refs": ["local-researcher-source-provenance"]
+    },
+    {
+      "name": "intel_graph.claims",
+      "purpose": "Track source claims with provenance, stance, confidence, and source/segment anchors.",
+      "identity": "stable claim id",
+      "evidence_refs": ["bib-prov-dm", "local-resume-agent-boundary"]
+    },
+    {
+      "name": "intel_graph.work_entities",
+      "purpose": "Connect works or segments to mentioned entities.",
+      "identity": "work_id, entity_id, and relationship_type",
+      "evidence_refs": ["bib-prov-dm"]
+    },
+    {
+      "name": "intel_graph.work_topics",
+      "purpose": "Connect works or segments to topics.",
+      "identity": "work_id, topic_id, and relationship_type",
+      "evidence_refs": ["local-researcher-source-provenance"]
+    },
+    {
+      "name": "intel_graph.source_assessments",
+      "purpose": "Track user-owned quality, reliability, noise, coverage, and trust assessments.",
+      "identity": "source_id, assessor_id, and assessment_type",
+      "evidence_refs": ["local-researcher-source-provenance"]
+    },
+    {
+      "name": "intel_graph.relevance_scores",
+      "purpose": "Store advisory scoring outputs with reasons, evidence, missing evidence, and deterministic tie breakers.",
+      "identity": "subject_kind, subject_id, algorithm_id, and algorithm_version",
+      "evidence_refs": ["local-resume-agent-architecture", "bib-career-aware-rag-resume-tailoring"]
+    },
+    {
+      "name": "intel_graph.project_connections",
+      "purpose": "Connect intel to projects, writing, resumes, job searches, and other LifeDB domains.",
+      "identity": "subject_kind, subject_id, project_ref, and connection_type",
+      "evidence_refs": ["local-resume-agent-boundary"]
+    },
+    {
+      "name": "intel_graph.life_graph_mappings",
+      "purpose": "Map selected intel records into curated public.life_graph_objects only when promotion is warranted.",
+      "identity": "intel_kind and intel_id",
+      "evidence_refs": ["jnap-life-graph:schemas/life-graph-object.schema.json"]
+    }
+  ],
+  "promotion_rules": [
+    "Raw intake remains in intel_graph by default.",
+    "Saved, cited, annotated, or project-linked intel can be proposed for public.life_graph_objects.",
+    "Projected sites must read curated Life Graph projections, not raw intel tables.",
+    "Agent-generated relevance and claims are advisory until a separate graph patch or user action applies them."
+  ]
+}
