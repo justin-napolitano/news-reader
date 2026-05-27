@@ -157,9 +157,39 @@ async function sendNewsReaderImport(payload, { apply = false, env = process.env 
   });
 }
 
-async function listLifeGraphIntelSources({ limit = 100, env = process.env } = {}) {
-  return callLifeGraph(`/api/intel/sources?limit=${encodeURIComponent(limit)}`, {
+async function listLifeGraphIntelSources({ limit = 100, includeDisabled = false, env = process.env } = {}) {
+  const params = new URLSearchParams({ limit: String(limit) });
+
+  if (includeDisabled) {
+    params.set("include_disabled", "1");
+  }
+
+  return callLifeGraph(`/api/intel/sources?${params.toString()}`, {
     method: "GET",
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function upsertLifeGraphIntelSource({ source, env = process.env }) {
+  return callLifeGraph("/api/intel/sources", {
+    method: "POST",
+    body: {
+      actor_id: "news-reader-admin",
+      source
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function setLifeGraphIntelSourceEnabled({ sourceId, enabled, env = process.env }) {
+  return callLifeGraph(`/api/intel/sources/${encodeURIComponent(sourceId)}/state`, {
+    method: "POST",
+    body: {
+      actor_id: "news-reader-admin",
+      enabled
+    },
     requireWriteToken: true,
     env
   });
@@ -258,5 +288,7 @@ module.exports = {
   listLifeGraphReaderWorks,
   remoteData,
   sendNewsReaderImport,
+  setLifeGraphIntelSourceEnabled,
+  upsertLifeGraphIntelSource,
   updateLifeGraphReaderState
 };

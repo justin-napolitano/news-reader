@@ -107,8 +107,14 @@ async function main() {
 
   const home = await request("/");
 
-  if (!home.text.includes("News Reader") || !home.text.includes("view-strip")) {
+  if (!home.text.includes("News Reader") || !home.text.includes("view-strip") || !home.text.includes("/admin")) {
     throw new Error("home page did not render News Reader");
+  }
+
+  const adminPage = await request("/admin.html");
+
+  if (!adminPage.text.includes("Save Source") || !adminPage.text.includes("/admin.js")) {
+    throw new Error("admin page did not render the source manager shell");
   }
 
   const reader = await request("/reader.html?url=https%3A%2F%2Fexample.com%2Fstory-one&title=Fixture&work_id=work%3Afixture-story");
@@ -196,6 +202,29 @@ async function main() {
     throw new Error("life graph status endpoint did not return safe config metadata");
   }
 
+  const adminSources = await fetch(`${BASE_URL}/api/admin/sources`, {
+    headers: { cookie: sessionCookie }
+  });
+  const adminSourcesPayload = await adminSources.json();
+
+  if (adminSources.status !== 503 || adminSourcesPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("admin sources endpoint should block safely when Life Graph is unconfigured");
+  }
+
+  const invalidAdminSource = await fetch(`${BASE_URL}/api/admin/sources`, {
+    method: "POST",
+    headers: { "content-type": "application/json", cookie: sessionCookie },
+    body: JSON.stringify({ source: { id: "fixture" } })
+  });
+  const invalidAdminSourcePayload = await invalidAdminSource.json();
+
+  if (
+    invalidAdminSource.status !== 400 ||
+    invalidAdminSourcePayload.blockers?.[0]?.code !== "news_reader_source_name_required"
+  ) {
+    throw new Error("admin source upsert did not validate required source fields");
+  }
+
   const lifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
   const lifeGraphDryRunPayload = JSON.parse(lifeGraphDryRun.text);
 
@@ -261,6 +290,7 @@ async function main() {
           "login gate",
           "cron auth gate",
           "login form",
+          "admin source page",
           "reader page",
           "sources",
           "fixture feed",
@@ -271,6 +301,8 @@ async function main() {
           "idempotency",
           "life graph migrations",
           "life graph status",
+          "admin source remote block",
+          "admin source validation",
           "life graph dry-run import",
           "life graph post-only mutation guard",
           "life graph reader state mutation guard",

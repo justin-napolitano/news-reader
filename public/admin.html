@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11110f" />
+    <title>News Reader Sources</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell admin-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h1>Sources</h1>
+        </div>
+        <nav class="topbar-actions" aria-label="Admin navigation">
+          <a class="button-link" href="/">Reader</a>
+          <a class="button-link" href="/logout">Logout</a>
+        </nav>
+      </header>
+
+      <section class="admin-grid" aria-label="Source management">
+        <form id="source-form" class="admin-panel">
+          <div>
+            <p class="panel-label">Add or update</p>
+            <h2>RSS source</h2>
+          </div>
+
+          <label>
+            Name
+            <input name="name" autocomplete="off" required />
+          </label>
+
+          <label>
+            Source id
+            <input name="id" autocomplete="off" placeholder="auto from name" />
+          </label>
+
+          <label>
+            Section
+            <input name="section" autocomplete="off" />
+          </label>
+
+          <label>
+            Feed URL
+            <input name="feedUrl" type="url" autocomplete="off" required />
+          </label>
+
+          <label>
+            Allowed hosts
+            <input name="allowHosts" autocomplete="off" placeholder="example.com, www.example.com" />
+          </label>
+
+          <label>
+            Tags
+            <input name="tags" autocomplete="off" placeholder="security, media, analysis" />
+          </label>
+
+          <button type="submit">Save Source</button>
+          <p id="admin-status" class="admin-status" aria-live="polite">Loading sources...</p>
+        </form>
+
+        <section class="admin-panel source-manager">
+          <div class="source-manager-head">
+            <div>
+              <p class="panel-label">Life Graph</p>
+              <h2>Managed sources</h2>
+            </div>
+            <button id="reload-sources" type="button">Reload</button>
+          </div>
+          <ol id="admin-source-list" class="admin-source-list"></ol>
+        </section>
+      </section>
+    </main>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>
