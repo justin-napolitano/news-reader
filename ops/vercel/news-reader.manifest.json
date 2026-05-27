@@ -1,0 +1,54 @@
+{
+  "schema_version": "news-reader.vercel-ops.v1",
+  "project": "news-reader",
+  "domain": "news.selectproj.com",
+  "env_file": ".env.vercel.production",
+  "environments": ["production"],
+  "env": [
+    {
+      "key": "NEWS_READER_ADMIN_PASSCODE",
+      "type": "sensitive",
+      "targets": ["production"],
+      "required": true
+    },
+    {
+      "key": "NEWS_READER_SESSION_SECRET",
+      "type": "sensitive",
+      "targets": ["production"],
+      "required": true
+    },
+    {
+      "key": "LIFE_GRAPH_API_BASE_URL",
+      "type": "plain",
+      "targets": ["production"],
+      "required": true
+    },
+    {
+      "key": "LIFE_GRAPH_WRITE_TOKEN",
+      "type": "sensitive",
+      "targets": ["production"],
+      "required": true
+    },
+    {
+      "key": "NEWS_READER_ITEMS_SOURCE",
+      "type": "plain",
+      "targets": ["production"],
+      "required": true,
+      "default": "life_graph"
+    },
+    {
+      "key": "NEWS_READER_ADMIN_USER",
+      "type": "plain",
+      "targets": ["production"],
+      "required": false,
+      "default": "admin"
+    },
+    {
+      "key": "NEWS_READER_COOKIE_SECURE",
+      "type": "plain",
+      "targets": ["production"],
+      "required": false,
+      "default": "1"
+    }
+  ]
+}
