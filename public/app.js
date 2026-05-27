@@ -50,6 +50,17 @@ function articleHref(article) {
     section: article.section || ""
   });
 
+  const workId = article.readerState?.work_id || article.id;
+
+  if (workId) {
+    params.set("work_id", workId);
+  }
+
+  if (article.readerState) {
+    params.set("saved", article.readerState.is_saved ? "1" : "0");
+    params.set("archived", article.readerState.is_hidden ? "1" : "0");
+  }
+
   return `/reader.html?${params.toString()}`;
 }
 

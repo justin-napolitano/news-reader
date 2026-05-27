@@ -11,7 +11,11 @@
     <main class="app-shell reader-page">
       <header class="reader-topbar">
         <a class="back-link" href="/">Back</a>
-        <a id="reader-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+        <div class="reader-topbar-actions">
+          <button id="reader-save" class="reader-action-button" type="button">Save</button>
+          <button id="reader-archive" class="reader-action-button" type="button">Archive</button>
+          <a id="reader-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+        </div>
       </header>
 
       <article class="reader-panel" aria-live="polite">
@@ -19,6 +23,7 @@
           <div class="reader-head">
             <p class="eyebrow" id="reader-source">Reader</p>
             <h1 id="reader-title">Loading story...</h1>
+            <p id="reader-action-status" class="reader-action-status" aria-live="polite"></p>
           </div>
           <div id="reader-body" class="reader-body">
             <p>Extracting readable text...</p>
