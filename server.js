@@ -975,6 +975,35 @@ async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
   };
 }
 
+async function refreshReaderItemsPayload({ view = "unread" } = {}) {
+  if (lifeGraphConfig().itemsSource !== "life_graph") {
+    return {
+      ...(await readerItemsPayload({ refresh: true, view })),
+      refresh: {
+        ok: true,
+        mode: "feed"
+      }
+    };
+  }
+
+  const importPayload = await scheduledNewsImportPayload({ refresh: true, apply: true });
+
+  if (!importPayload.ok) {
+    return importPayload;
+  }
+
+  const itemsPayload = await readerItemsPayload({ refresh: false, view });
+
+  return {
+    ...itemsPayload,
+    refresh: {
+      ok: true,
+      mode: "life_graph",
+      import: importPayload.data
+    }
+  };
+}
+
 function hostAllowed(articleUrl, sources) {
   const parsed = new URL(articleUrl);
   const host = parsed.hostname.replace(/^www\./, "");
@@ -1096,6 +1125,7 @@ async function handle(req, res) {
     "/api/life-graph/import/dry-run",
     "/api/life-graph/import/remote-dry-run",
     "/api/life-graph/import/apply",
+    "/api/items/refresh",
     "/api/life-graph/intel/reader/state",
     "/api/life-graph/intel/retention/apply"
   ]);
@@ -1178,6 +1208,12 @@ async function handle(req, res) {
     if (requestUrl.pathname === "/api/items") {
       const refresh = requestUrl.searchParams.get("refresh") === "1";
       sendJson(res, 200, await readerItemsPayload({ refresh, view: requestUrl.searchParams.get("view") || "unread" }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/items/refresh") {
+      const payload = await refreshReaderItemsPayload({ view: requestUrl.searchParams.get("view") || "unread" });
+      sendJson(res, payload.ok === false ? blockerHttpStatus(payload.blockers) : 200, payload);
       return;
     }
 

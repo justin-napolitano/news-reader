@@ -107,6 +107,7 @@ This repo now exposes read-only normalized graph objects:
 - `POST /api/life-graph/import/dry-run`
 - `POST /api/life-graph/import/remote-dry-run`
 - `POST /api/life-graph/import/apply`
+- `POST /api/items/refresh`
 - `GET /api/life-graph/intel/sources`
 - `GET /api/life-graph/intel/works`
 - `GET /api/life-graph/intel/reader/works`
@@ -167,7 +168,7 @@ GitHub Actions runs this endpoint daily from `.github/workflows/daily-news-impor
 - GitHub Actions secret: `NEWS_READER_CRON_SECRET`
 - Optional GitHub Actions variable: `NEWS_READER_BASE_URL`, defaults to `https://news.selectproj.com`
 
-The schedule is `17 10 * * *` UTC and can also be run manually with `workflow_dispatch`.
+The schedule is `17 */3 * * *` UTC, roughly every three hours, and can also be run manually with `workflow_dispatch`.
 
 Run contract validation with:
 

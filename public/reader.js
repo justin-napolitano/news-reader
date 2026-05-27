@@ -1,14 +1,17 @@
+const LIST_CONTEXT_KEY = "news-reader:list-context";
 const params = new URLSearchParams(window.location.search);
 const articleUrl = params.get("url");
 const workId = params.get("work_id") || params.get("id") || "";
 const fallbackTitle = params.get("title") || "Untitled";
 const fallbackSource = [params.get("source"), params.get("section")].filter(Boolean).join(" / ");
+const currentIndex = Number.parseInt(params.get("index") || "", 10);
 const readerState = {
   isSaved: params.get("saved") === "1",
   isArchived: params.get("archived") === "1"
 };
 
 const els = {
+  back: document.querySelector("#reader-back"),
   source: document.querySelector("#reader-source"),
   title: document.querySelector("#reader-title"),
   link: document.querySelector("#reader-link"),
@@ -18,9 +21,89 @@ const els = {
   status: document.querySelector("#reader-action-status")
 };
 
+function readListContext() {
+  try {
+    return JSON.parse(window.sessionStorage.getItem(LIST_CONTEXT_KEY) || "null");
+  } catch (_err) {
+    return null;
+  }
+}
+
+function safeSameOriginPath(value, fallback = "/") {
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(value, window.location.origin);
+
+    if (parsed.origin !== window.location.origin) {
+      return fallback;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch (_err) {
+    return fallback;
+  }
+}
+
+function safeReaderPath(value) {
+  const path = safeSameOriginPath(value, "");
+  return path.startsWith("/reader.html?") ? path : "";
+}
+
+const listContext = readListContext();
+const returnPath = safeSameOriginPath(params.get("return") || listContext?.returnPath, "/");
+
 function setActionStatus(message, isError = false) {
   els.status.textContent = message;
   els.status.classList.toggle("error", isError);
+}
+
+function successMessage(action) {
+  if (action === "save") {
+    return "Saved.";
+  }
+
+  if (action === "unsave") {
+    return "Removed from saved.";
+  }
+
+  if (action === "dismiss") {
+    return "Archived.";
+  }
+
+  return "Updated.";
+}
+
+function progressMessage(action) {
+  if (action === "dismiss") {
+    return "Archiving...";
+  }
+
+  return action === "unsave" ? "Removing..." : "Saving...";
+}
+
+function nextArticleHref() {
+  if (!Number.isInteger(currentIndex) || currentIndex < 0 || !Array.isArray(listContext?.articles)) {
+    return "";
+  }
+
+  return safeReaderPath(listContext.articles[currentIndex + 1]?.href);
+}
+
+function advanceToNextArticle(action) {
+  const href = nextArticleHref();
+
+  if (!href) {
+    return false;
+  }
+
+  setActionStatus(`${successMessage(action)} Opening next article...`);
+  window.setTimeout(() => {
+    window.location.replace(href);
+  }, 120);
+  return true;
 }
 
 function renderReaderActions() {
@@ -46,10 +129,11 @@ async function updateReaderState(action) {
   }
 
   const previousState = { ...readerState };
+  let advancing = false;
 
   els.save.disabled = true;
   els.archive.disabled = true;
-  setActionStatus(action === "dismiss" ? "Archiving..." : "Saving...");
+  setActionStatus(progressMessage(action));
 
   try {
     const response = await fetch("/api/life-graph/intel/reader/state", {
@@ -66,20 +150,25 @@ async function updateReaderState(action) {
 
     if (action === "save") {
       readerState.isSaved = true;
-      setActionStatus("Saved.");
     } else if (action === "unsave") {
       readerState.isSaved = false;
-      setActionStatus("Removed from saved.");
     } else if (action === "dismiss") {
       readerState.isArchived = true;
-      setActionStatus("Archived.");
+    }
+
+    advancing = advanceToNextArticle(action);
+
+    if (!advancing) {
+      setActionStatus(successMessage(action));
     }
   } catch (err) {
     readerState.isSaved = previousState.isSaved;
     readerState.isArchived = previousState.isArchived;
     setActionStatus(err instanceof Error ? err.message : String(err), true);
   } finally {
-    renderReaderActions();
+    if (!advancing) {
+      renderReaderActions();
+    }
   }
 }
 
@@ -108,6 +197,7 @@ function renderError(message) {
 }
 
 async function loadReader() {
+  els.back.href = returnPath;
   els.title.textContent = fallbackTitle;
   els.source.textContent = fallbackSource || "Reader";
   renderReaderActions();

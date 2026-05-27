@@ -1,8 +1,11 @@
+const LIST_CONTEXT_KEY = "news-reader:list-context";
+
 const state = {
   articles: [],
   sources: [],
   activeSource: "all",
-  activeView: "unread"
+  activeView: "unread",
+  restoredScroll: false
 };
 
 const els = {
@@ -20,6 +23,23 @@ const views = [
   { id: "read", name: "Read" },
   { id: "archived", name: "Archived" }
 ];
+
+const initialParams = new URLSearchParams(window.location.search);
+
+state.activeView = normalizeView(initialParams.get("view"));
+state.activeSource = initialParams.get("source") || "all";
+
+function normalizeView(value) {
+  return views.some((view) => view.id === value) ? value : "unread";
+}
+
+function normalizeLoadedSource(value) {
+  if (!value || value === "all") {
+    return "all";
+  }
+
+  return state.sources.some((source) => source.id === value) ? value : "all";
+}
 
 function formatDate(value) {
   if (!value) {
@@ -42,12 +62,95 @@ function filteredArticles() {
   return state.articles.filter((article) => article.sourceId === state.activeSource);
 }
 
-function articleHref(article) {
+function currentListPath() {
+  const params = new URLSearchParams();
+
+  if (state.activeView !== "unread") {
+    params.set("view", state.activeView);
+  }
+
+  if (state.activeSource !== "all") {
+    params.set("source", state.activeSource);
+  }
+
+  const query = params.toString();
+  return query ? `/?${query}` : "/";
+}
+
+function syncListUrl() {
+  window.history.replaceState(null, "", currentListPath());
+}
+
+function readListContext() {
+  try {
+    return JSON.parse(window.sessionStorage.getItem(LIST_CONTEXT_KEY) || "null");
+  } catch (_err) {
+    return null;
+  }
+}
+
+function listContextMatches(context) {
+  return context?.view === state.activeView && context?.source === state.activeSource;
+}
+
+function saveListContext() {
+  const articles = filteredArticles().map((article, index) => ({
+    id: article.readerState?.work_id || article.id,
+    href: articleHref(article, index)
+  }));
+
+  try {
+    window.sessionStorage.setItem(
+      LIST_CONTEXT_KEY,
+      JSON.stringify({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        view: state.activeView,
+        source: state.activeSource,
+        returnPath: currentListPath(),
+        scrollY: window.scrollY,
+        articles
+      })
+    );
+  } catch (_err) {
+    // Session storage is an enhancement; links still carry the return filters.
+  }
+}
+
+function restoreListScroll() {
+  if (state.restoredScroll) {
+    return false;
+  }
+
+  const context = readListContext();
+
+  if (!listContextMatches(context) || !Number.isFinite(context.scrollY)) {
+    state.restoredScroll = true;
+    return false;
+  }
+
+  state.restoredScroll = true;
+  window.requestAnimationFrame(() => {
+    window.scrollTo(0, context.scrollY);
+    saveListContext();
+  });
+  return true;
+}
+
+function resetScrollMemory() {
+  state.restoredScroll = true;
+  window.scrollTo(0, 0);
+}
+
+function articleHref(article, index = -1) {
   const params = new URLSearchParams({
     url: article.url,
     title: article.title,
     source: article.source,
-    section: article.section || ""
+    section: article.section || "",
+    view: state.activeView,
+    source_filter: state.activeSource,
+    return: currentListPath()
   });
 
   const workId = article.readerState?.work_id || article.id;
@@ -59,6 +162,10 @@ function articleHref(article) {
   if (article.readerState) {
     params.set("saved", article.readerState.is_saved ? "1" : "0");
     params.set("archived", article.readerState.is_hidden ? "1" : "0");
+  }
+
+  if (index >= 0) {
+    params.set("index", String(index));
   }
 
   return `/reader.html?${params.toString()}`;
@@ -74,6 +181,8 @@ function renderViews() {
     button.textContent = view.name;
     button.addEventListener("click", () => {
       state.activeView = view.id;
+      resetScrollMemory();
+      syncListUrl();
       renderViews();
       loadArticles();
     });
@@ -96,8 +205,11 @@ function renderSources() {
     button.textContent = source.name;
     button.addEventListener("click", () => {
       state.activeSource = source.id;
+      resetScrollMemory();
+      syncListUrl();
       renderSources();
       renderArticles();
+      saveListContext();
     });
     els.sourceStrip.appendChild(button);
   });
@@ -141,7 +253,7 @@ function renderArticles() {
   els.count.textContent = `${articles.length} items`;
   els.list.innerHTML = "";
 
-  articles.forEach((article) => {
+  articles.forEach((article, index) => {
     const li = document.createElement("li");
     const link = document.createElement("a");
     const meta = document.createElement("div");
@@ -153,9 +265,10 @@ function renderArticles() {
     const action = actionForView(article);
     const canUpdateState = Boolean(article.readerState?.work_id);
 
-    link.href = articleHref(article);
+    link.href = articleHref(article, index);
     link.className = "article-card";
     link.addEventListener("click", () => {
+      saveListContext();
       if (state.activeView === "unread") {
         updateArticleState(article, "read", { silent: true });
       }
@@ -189,24 +302,33 @@ async function loadSources() {
   const payload = await response.json();
 
   state.sources = payload.sources || [];
+  const requestedSource = state.activeSource;
+  state.activeSource = normalizeLoadedSource(state.activeSource);
+  syncListUrl();
   renderSources();
+
+  if (requestedSource !== state.activeSource) {
+    renderArticles();
+    saveListContext();
+  }
 }
 
 async function loadArticles({ refresh = false } = {}) {
+  els.status.classList.remove("error");
   els.status.textContent = refresh ? "Refreshing..." : "Loading feed...";
+  els.refresh.disabled = true;
 
   try {
     const params = new URLSearchParams({ view: state.activeView });
+    const endpoint = refresh ? "/api/items/refresh" : `/api/items?${params.toString()}`;
+    const options = refresh ? { method: "POST" } : {};
 
-    if (refresh) {
-      params.set("refresh", "1");
-    }
-
-    const response = await fetch(`/api/items?${params.toString()}`);
+    const response = await fetch(refresh ? `${endpoint}?${params.toString()}` : endpoint, options);
     const payload = await response.json();
 
     if (!response.ok) {
-      throw new Error(payload.error || "Unable to load feed.");
+      const blocker = Array.isArray(payload.blockers) ? payload.blockers[0] : null;
+      throw new Error(blocker?.message || payload.error || "Unable to load feed.");
     }
 
     state.articles = payload.items || [];
@@ -214,14 +336,21 @@ async function loadArticles({ refresh = false } = {}) {
       ? `${payload.errors.length} source error${payload.errors.length === 1 ? "" : "s"}`
       : `Updated ${formatDate(payload.generatedAt)}`;
     renderArticles();
+    if (!restoreListScroll()) {
+      saveListContext();
+    }
   } catch (err) {
     els.status.textContent = err instanceof Error ? err.message : String(err);
     els.status.classList.add("error");
+  } finally {
+    els.refresh.disabled = false;
   }
 }
 
 els.refresh.addEventListener("click", () => loadArticles({ refresh: true }));
+window.addEventListener("pagehide", saveListContext);
 
 renderViews();
+syncListUrl();
 loadSources();
 loadArticles();

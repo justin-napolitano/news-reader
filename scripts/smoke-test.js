@@ -131,6 +131,17 @@ async function main() {
     throw new Error("fixture feed did not return two items");
   }
 
+  const refreshItems = await request("/api/items/refresh?view=unread", { method: "POST" });
+  const refreshItemsPayload = JSON.parse(refreshItems.text);
+
+  if (
+    !Array.isArray(refreshItemsPayload.items) ||
+    refreshItemsPayload.items.length !== 2 ||
+    refreshItemsPayload.refresh?.mode !== "feed"
+  ) {
+    throw new Error("reader refresh endpoint did not return refreshed fixture items");
+  }
+
   const graphSources = await request("/api/graph/sources");
   const graphSourcePayload = JSON.parse(graphSources.text);
 
@@ -253,6 +264,7 @@ async function main() {
           "reader page",
           "sources",
           "fixture feed",
+          "reader refresh",
           "graph sources",
           "graph contracts",
           "graph works",
