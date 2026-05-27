@@ -95,9 +95,9 @@ async function main() {
     throw new Error("home page did not render News Reader");
   }
 
-  const reader = await request("/reader.html?url=https%3A%2F%2Fexample.com%2Fstory-one&title=Fixture");
+  const reader = await request("/reader.html?url=https%3A%2F%2Fexample.com%2Fstory-one&title=Fixture&work_id=work%3Afixture-story");
 
-  if (!reader.text.includes("Open original") || !reader.text.includes("/reader.js")) {
+  if (!reader.text.includes("Open original") || !reader.text.includes("reader-save") || !reader.text.includes("reader-archive") || !reader.text.includes("/reader.js")) {
     throw new Error("reader page did not render the article reader shell");
   }
 
