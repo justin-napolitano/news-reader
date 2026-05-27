@@ -10,12 +10,16 @@ const server = spawn(process.execPath, ["server.js"], {
     LIFE_GRAPH_API_BASE_URL: "",
     LIFE_GRAPH_WRITE_TOKEN: "",
     NEWS_READER_ITEMS_SOURCE: "feed",
-    NEWS_READER_FIXTURE: "1"
+    NEWS_READER_FIXTURE: "1",
+    NEWS_READER_ADMIN_PASSCODE: "fixture-pass",
+    NEWS_READER_SESSION_SECRET: "fixture-session-secret",
+    NEWS_READER_COOKIE_SECURE: "0"
   },
   stdio: ["ignore", "pipe", "pipe"]
 });
 
 let output = "";
+let sessionCookie = "";
 
 server.stdout.on("data", (chunk) => {
   output += chunk.toString();
@@ -30,7 +34,18 @@ function wait(ms) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${BASE_URL}${path}`, options);
+  const headers = {
+    ...(options.headers || {})
+  };
+
+  if (options.auth !== false && sessionCookie) {
+    headers.cookie = sessionCookie;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers
+  });
   const text = await response.text();
 
   if (!response.ok) {
@@ -42,6 +57,37 @@ async function request(path, options = {}) {
 
 async function main() {
   await wait(500);
+
+  const guardedHome = await fetch(`${BASE_URL}/`, { redirect: "manual" });
+
+  if (guardedHome.status !== 303 || !guardedHome.headers.get("location")?.startsWith("/login")) {
+    throw new Error("home page did not redirect unauthenticated users to login");
+  }
+
+  const guardedItems = await fetch(`${BASE_URL}/api/items`);
+
+  if (guardedItems.status !== 401) {
+    throw new Error("items API did not reject unauthenticated users");
+  }
+
+  const loginPage = await request("/login", { auth: false });
+
+  if (!loginPage.text.includes("News Reader") || !loginPage.text.includes("Passcode")) {
+    throw new Error("login page did not render");
+  }
+
+  const login = await fetch(`${BASE_URL}/login`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ username: "admin", passcode: "fixture-pass" }),
+    redirect: "manual"
+  });
+
+  if (login.status !== 303 || !login.headers.get("set-cookie")) {
+    throw new Error("login did not create a session cookie");
+  }
+
+  sessionCookie = login.headers.get("set-cookie").split(";")[0];
 
   const home = await request("/");
 
@@ -149,13 +195,17 @@ async function main() {
     throw new Error("life graph dry-run endpoint returned unstable source hashes");
   }
 
-  const applyGet = await fetch(`${BASE_URL}/api/life-graph/import/apply`);
+  const applyGet = await fetch(`${BASE_URL}/api/life-graph/import/apply`, {
+    headers: { cookie: sessionCookie }
+  });
 
   if (applyGet.status !== 405) {
     throw new Error("life graph apply endpoint allowed non-POST requests");
   }
 
-  const stateGet = await fetch(`${BASE_URL}/api/life-graph/intel/reader/state`);
+  const stateGet = await fetch(`${BASE_URL}/api/life-graph/intel/reader/state`, {
+    headers: { cookie: sessionCookie }
+  });
 
   if (stateGet.status !== 405) {
     throw new Error("life graph reader state endpoint allowed non-POST requests");
@@ -181,6 +231,8 @@ async function main() {
         ok: true,
         checked: [
           "home",
+          "login gate",
+          "login form",
           "reader page",
           "sources",
           "fixture feed",

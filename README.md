@@ -20,6 +20,65 @@ npm run dev
 
 Open `http://localhost:4175`.
 
+The reader is private by default. Login with username `admin` and set the passcode outside git:
+
+```bash
+NEWS_READER_ADMIN_PASSCODE=...
+NEWS_READER_SESSION_SECRET=...
+```
+
+Set `NEWS_READER_AUTH_REQUIRED=0` only for local unauthenticated development.
+
+## Deploy
+
+This repo includes a Vercel serverless entrypoint in `api/index.js` and routes all traffic through `vercel.json`.
+
+Target domain: `news.selectproj.com`.
+
+Required Vercel environment variables:
+
+- `NEWS_READER_ADMIN_PASSCODE`
+- `NEWS_READER_SESSION_SECRET`
+- `LIFE_GRAPH_API_BASE_URL`
+- `LIFE_GRAPH_WRITE_TOKEN`
+- `NEWS_READER_ITEMS_SOURCE=life_graph`
+
+Recommended production values:
+
+- `NEWS_READER_ADMIN_USER=admin`
+- `NEWS_READER_COOKIE_SECURE=1`
+
+`VERCEL=1` also makes cookies secure automatically.
+
+Deployment requirements are captured in `ops/vercel/news-reader.manifest.json`. Secret values stay in an untracked
+`.env.vercel.production` file or your shell environment.
+
+Set `VERCEL_TOKEN` in your shell when pushing env vars or attaching the domain through the repo scripts.
+
+Example `.env.vercel.production`:
+
+```bash
+NEWS_READER_ADMIN_PASSCODE=...
+NEWS_READER_SESSION_SECRET=...
+LIFE_GRAPH_API_BASE_URL=...
+LIFE_GRAPH_WRITE_TOKEN=...
+NEWS_READER_ITEMS_SOURCE=life_graph
+NEWS_READER_ADMIN_USER=admin
+NEWS_READER_COOKIE_SECURE=1
+```
+
+Plan and push Vercel config from the shell:
+
+```bash
+npm run vercel:env:seed
+npm run vercel:env:plan
+npm run vercel:env:push
+npm run vercel:domain:plan
+npm run vercel:domain:add
+```
+
+The seed and push scripts print key names and targets only. They never print secret values.
+
 ## Sources
 
 Edit `data/sources.json`.

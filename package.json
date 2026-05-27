@@ -15,6 +15,12 @@
     "life-graph:status": "node scripts/life-graph-client.js status",
     "life-graph:works": "node scripts/life-graph-client.js works",
     "start": "node server.js",
-    "smoke": "node scripts/intel-graph-contract-check.js && node scripts/smoke-test.js"
+    "smoke": "node scripts/intel-graph-contract-check.js && node scripts/smoke-test.js",
+    "vercel:domain:add": "node scripts/vercel-add-domain.mjs --apply",
+    "vercel:domain:plan": "node scripts/vercel-add-domain.mjs --dry-run",
+    "vercel:env:plan": "node scripts/vercel-sync-env.mjs --dry-run",
+    "vercel:env:push": "node scripts/vercel-sync-env.mjs --apply",
+    "vercel:env:seed": "node scripts/vercel-seed-env.mjs",
+    "vercel:pull": "npx vercel@latest pull --yes"
   }
 }
