@@ -3,7 +3,7 @@ name: Daily News Import
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 10 * * *"
+    - cron: "17 */3 * * *"
 
 permissions: {}
 
