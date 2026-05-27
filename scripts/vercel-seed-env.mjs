@@ -77,6 +77,7 @@ function render(values) {
     "NEWS_READER_ADMIN_USER",
     "NEWS_READER_ADMIN_PASSCODE",
     "NEWS_READER_SESSION_SECRET",
+    "NEWS_READER_CRON_SECRET",
     "NEWS_READER_COOKIE_SECURE",
     "NEWS_READER_AUTH_REQUIRED",
     "",
@@ -128,6 +129,10 @@ function main() {
   results.push({
     key: "NEWS_READER_SESSION_SECRET",
     action: seed(values, "NEWS_READER_SESSION_SECRET", randomSecret(48), { force: args.force })
+  });
+  results.push({
+    key: "NEWS_READER_CRON_SECRET",
+    action: seed(values, "NEWS_READER_CRON_SECRET", randomSecret(32), { force: args.force })
   });
   results.push({ key: "NEWS_READER_COOKIE_SECURE", action: seed(values, "NEWS_READER_COOKIE_SECURE", "1") });
   results.push({ key: "NEWS_READER_AUTH_REQUIRED", action: seed(values, "NEWS_READER_AUTH_REQUIRED", "1") });

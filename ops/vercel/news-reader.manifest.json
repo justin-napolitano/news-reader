@@ -18,6 +18,12 @@
       "required": true
     },
     {
+      "key": "NEWS_READER_CRON_SECRET",
+      "type": "sensitive",
+      "targets": ["production"],
+      "required": true
+    },
+    {
       "key": "LIFE_GRAPH_API_BASE_URL",
       "type": "plain",
       "targets": ["production"],

@@ -39,6 +39,7 @@ Required Vercel environment variables:
 
 - `NEWS_READER_ADMIN_PASSCODE`
 - `NEWS_READER_SESSION_SECRET`
+- `NEWS_READER_CRON_SECRET`
 - `LIFE_GRAPH_API_BASE_URL`
 - `LIFE_GRAPH_WRITE_TOKEN`
 - `NEWS_READER_ITEMS_SOURCE=life_graph`
@@ -60,6 +61,7 @@ Example `.env.vercel.production`:
 ```bash
 NEWS_READER_ADMIN_PASSCODE=...
 NEWS_READER_SESSION_SECRET=...
+NEWS_READER_CRON_SECRET=...
 LIFE_GRAPH_API_BASE_URL=...
 LIFE_GRAPH_WRITE_TOKEN=...
 NEWS_READER_ITEMS_SOURCE=life_graph
@@ -147,6 +149,25 @@ npm run life-graph:works
 When `NEWS_READER_ITEMS_SOURCE=life_graph`, the front page defaults to the unread inbox. Clicking an article marks it
 read, `Save` keeps it in the saved view, `Dismiss` hides it from the inbox, and `Archived` exposes hidden items for review.
 Retention is dry-run first through `npm run life-graph:retention`; Life Graph owns the durable policy and state tables.
+
+## Daily Import
+
+The production app exposes a machine-only endpoint for scheduled feed ingestion:
+
+```bash
+GET /api/cron/news-import
+Authorization: Bearer $NEWS_READER_CRON_SECRET
+```
+
+The endpoint fetches the configured RSS/Atom sources, applies the News Reader import to Life Graph, and returns a compact
+summary with local import ids and remote counts. It bypasses the browser login but requires `NEWS_READER_CRON_SECRET`.
+
+GitHub Actions runs this endpoint daily from `.github/workflows/daily-news-import.yml`. Configure these repo settings:
+
+- GitHub Actions secret: `NEWS_READER_CRON_SECRET`
+- Optional GitHub Actions variable: `NEWS_READER_BASE_URL`, defaults to `https://news.selectproj.com`
+
+The schedule is `17 10 * * *` UTC and can also be run manually with `workflow_dispatch`.
 
 Run contract validation with:
 
