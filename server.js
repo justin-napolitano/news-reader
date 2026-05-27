@@ -223,6 +223,54 @@ function isAuthorized(req) {
   return payload?.sub === config.adminUser;
 }
 
+function cronSecret() {
+  return String(process.env.NEWS_READER_CRON_SECRET || process.env.CRON_SECRET || "");
+}
+
+function cronAuthBlockers(req) {
+  const secret = cronSecret();
+  const authHeader = String(req.headers.authorization || "");
+  const prefix = "Bearer ";
+
+  if (!secret) {
+    return [
+      {
+        code: "news_reader_cron_secret_missing",
+        message: "Set NEWS_READER_CRON_SECRET before enabling scheduled imports."
+      }
+    ];
+  }
+
+  if (!authHeader.startsWith(prefix) || !constantTimeEqual(authHeader.slice(prefix.length).trim(), secret)) {
+    return [
+      {
+        code: "news_reader_cron_auth_invalid",
+        message: "Scheduled import requires a valid bearer token."
+      }
+    ];
+  }
+
+  return [];
+}
+
+function blockerHttpStatus(blockers) {
+  const codes = new Set((blockers || []).map((blocker) => String(blocker.code || "")));
+
+  if (codes.has("news_reader_cron_auth_invalid")) {
+    return 401;
+  }
+
+  if (
+    codes.has("news_reader_cron_secret_missing") ||
+    codes.has("life_graph_api_base_url_missing") ||
+    codes.has("life_graph_write_token_missing")
+  ) {
+    return 503;
+  }
+
+  return blockers?.length ? 502 : 200;
+}
+
 function wantsJson(req, pathname) {
   return pathname.startsWith("/api/") || String(req.headers.accept || "").includes("application/json");
 }
@@ -667,6 +715,30 @@ async function pushLifeGraphImportPayload({ refresh = false, apply = false } = {
   });
 }
 
+async function scheduledNewsImportPayload({ refresh = true, apply = true } = {}) {
+  const importPayload = await pushLifeGraphImportPayload({ refresh, apply });
+  const data = importPayload.data || {};
+  const remotePayload = remoteData(data.remote);
+
+  return apiResponse("cron.news_import", {
+    applied: Boolean(apply && importPayload.ok && data.applied),
+    dry_run: !apply,
+    generated_at: new Date().toISOString(),
+    local_import: data.local_import || null,
+    remote_counts: remotePayload.counts || null,
+    remote_command: data.remote?.command || null,
+    remote_status: data.remote?.status || null
+  }, {
+    blockers: importPayload.blockers || [],
+    provenance: [
+      { type: "repo_local", source: "data/sources.json" },
+      { type: "news_reader", source: "GET /api/cron/news-import" },
+      { type: "life_graph_api", source: `/api/intel/imports/news-reader/${apply ? "apply" : "dry-run"}` }
+    ],
+    next_actions: importPayload.next_actions || []
+  });
+}
+
 async function lifeGraphIntelSourcesPayload() {
   const remote = await listLifeGraphIntelSources({ limit: 500 });
   const data = remoteData(remote.response);
@@ -1043,6 +1115,28 @@ async function handle(req, res) {
       redirect(res, "/login", {
         "set-cookie": clearSessionCookie(authConfig())
       });
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/cron/news-import") {
+      if (!["GET", "POST"].includes(req.method)) {
+        sendJson(res, 405, { error: "Method not allowed" });
+        return;
+      }
+
+      const authBlockers = cronAuthBlockers(req);
+
+      if (authBlockers.length) {
+        sendJson(res, blockerHttpStatus(authBlockers), apiResponse("cron.news_import", null, { blockers: authBlockers }));
+        return;
+      }
+
+      const payload = await scheduledNewsImportPayload({
+        refresh: requestUrl.searchParams.get("refresh") !== "0",
+        apply: requestUrl.searchParams.get("dry_run") !== "1"
+      });
+
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
       return;
     }
 

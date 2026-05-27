@@ -1,0 +1,28 @@
+name: Daily News Import
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 10 * * *"
+
+permissions: {}
+
+jobs:
+  import:
+    name: Import feed items into Life Graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NEWS_READER_BASE_URL: ${{ vars.NEWS_READER_BASE_URL || 'https://news.selectproj.com' }}
+      NEWS_READER_CRON_SECRET: ${{ secrets.NEWS_READER_CRON_SECRET }}
+    steps:
+      - name: Validate configuration
+        run: |
+          test -n "$NEWS_READER_BASE_URL"
+          test -n "$NEWS_READER_CRON_SECRET"
+
+      - name: Trigger daily import
+        run: |
+          curl --fail-with-body --show-error --silent \
+            --header "Authorization: Bearer ${NEWS_READER_CRON_SECRET}" \
+            "${NEWS_READER_BASE_URL%/}/api/cron/news-import"

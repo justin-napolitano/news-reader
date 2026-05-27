@@ -13,6 +13,7 @@ const server = spawn(process.execPath, ["server.js"], {
     NEWS_READER_FIXTURE: "1",
     NEWS_READER_ADMIN_PASSCODE: "fixture-pass",
     NEWS_READER_SESSION_SECRET: "fixture-session-secret",
+    NEWS_READER_CRON_SECRET: "fixture-cron-secret",
     NEWS_READER_COOKIE_SECURE: "0"
   },
   stdio: ["ignore", "pipe", "pipe"]
@@ -68,6 +69,21 @@ async function main() {
 
   if (guardedItems.status !== 401) {
     throw new Error("items API did not reject unauthenticated users");
+  }
+
+  const guardedCron = await fetch(`${BASE_URL}/api/cron/news-import`);
+
+  if (guardedCron.status !== 401) {
+    throw new Error("cron import endpoint did not reject missing bearer auth");
+  }
+
+  const blockedCron = await fetch(`${BASE_URL}/api/cron/news-import`, {
+    headers: { authorization: "Bearer fixture-cron-secret" }
+  });
+  const blockedCronPayload = await blockedCron.json();
+
+  if (blockedCron.status !== 503 || blockedCronPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("cron import endpoint did not reach Life Graph config guard after bearer auth");
   }
 
   const loginPage = await request("/login", { auth: false });
@@ -232,6 +248,7 @@ async function main() {
         checked: [
           "home",
           "login gate",
+          "cron auth gate",
           "login form",
           "reader page",
           "sources",
