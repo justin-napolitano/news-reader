@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-26",
+  "updated": "2026-05-27",
   "sources": [
     {
       "id": "propublica",
@@ -42,6 +42,27 @@
       "section": "Technology",
       "feedUrl": "https://restofworld.org/feed/latest/",
       "allowHosts": ["restofworld.org"]
+    },
+    {
+      "id": "lawfare",
+      "name": "Lawfare",
+      "section": "National Security",
+      "feedUrl": "https://www.lawfaremedia.org/feeds/articles",
+      "allowHosts": ["www.lawfaremedia.org", "lawfaremedia.org"]
+    },
+    {
+      "id": "marshall-project",
+      "name": "The Marshall Project",
+      "section": "Criminal Justice",
+      "feedUrl": "https://www.themarshallproject.org/rss/recent.xml",
+      "allowHosts": ["www.themarshallproject.org", "themarshallproject.org"]
+    },
+    {
+      "id": "cisa-advisories",
+      "name": "CISA",
+      "section": "Cybersecurity Advisories",
+      "feedUrl": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+      "allowHosts": ["www.cisa.gov", "cisa.gov"]
     }
   ]
 }
