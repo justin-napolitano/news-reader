@@ -70,13 +70,14 @@ NEWS_READER_COOKIE_SECURE=1
 Plan and push Vercel config from the shell:
 
 ```bash
+npm run vercel:env:seed
 npm run vercel:env:plan
 npm run vercel:env:push
 npm run vercel:domain:plan
 npm run vercel:domain:add
 ```
 
-The env push script prints key names and targets only. It never prints secret values.
+The seed and push scripts print key names and targets only. They never print secret values.
 
 ## Sources
 

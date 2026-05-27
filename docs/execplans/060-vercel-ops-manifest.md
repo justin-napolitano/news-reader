@@ -22,6 +22,7 @@ through the Vercel UI.
 - Add `ops/vercel/news-reader.manifest.json`.
 - Add dry-run-first env sync script.
 - Add dry-run-first domain attachment script.
+- Add local env seed script for generated passcode/session values.
 - Add npm scripts for plan/push/pull/domain operations.
 - Ignore untracked `.env.*` files while preserving `.env.example`.
 - Document the shell workflow.
@@ -47,6 +48,8 @@ attach checks whether the domain is already on the project before creating it.
 
 - `node --check scripts/vercel-sync-env.mjs`
 - `node --check scripts/vercel-add-domain.mjs`
+- `node --check scripts/vercel-seed-env.mjs`
+- `npm run vercel:env:seed`
 - `npm run vercel:env:plan`
 - `npm run vercel:domain:plan`
 - `npm run smoke`
@@ -54,4 +57,5 @@ attach checks whether the domain is already on the project before creating it.
 
 ## Handoff
 
-After merge, create `.env.vercel.production`, run `npm run vercel:env:push`, then run `npm run vercel:domain:add`.
+After merge, run `npm run vercel:env:seed`, fill in `LIFE_GRAPH_WRITE_TOKEN` and `VERCEL_TOKEN`, run
+`npm run vercel:env:push`, then run `npm run vercel:domain:add`.
