@@ -1,7 +1,7 @@
 # Initial Bibliography
 
 Status: draft
-Updated: 2026-05-26
+Updated: 2026-05-27
 
 This bibliography starts with primary standards and official documentation. Future research notes should cite these entries by id.
 
@@ -186,6 +186,96 @@ This bibliography starts with primary standards and official documentation. Futu
 - URL: https://modelcontextprotocol.io/specification/2025-06-18/basic
 - Evidence level: standard
 - Relevance: Useful later for capability negotiation, but should wrap repo-native APIs rather than replace them.
+
+## Relevance, Ranking, And News Triage
+
+### `bib-news-rec-survey-2021`
+
+- Title: News Recommender System: A Review of Recent Progress, Challenges, and Opportunities
+- Publisher: Artificial Intelligence Review / PMC
+- URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC8294232/
+- Evidence level: research-survey
+- Relevance: Summarizes news recommendation challenges including cold start, data sparsity, interpretability limits, diversity, novelty, and serendipity. Supports treating reader ranking as multi-objective rather than click prediction.
+
+### `bib-personalized-news-survey-2023`
+
+- Title: A Survey of Personalized News Recommendation
+- Publisher: Data Science and Engineering / Springer
+- URL: https://link.springer.com/article/10.1007/s41019-023-00228-5
+- Evidence level: research-survey
+- Relevance: Reviews personalized news recommendation components such as data collection, user modeling, prediction modeling, and personalized display. Useful for separating intake, ranking, and UI queues.
+
+### `bib-mind-news-rec`
+
+- Title: MIND: A Large-scale Dataset for News Recommendation
+- Publisher: ACL 2020 / Microsoft Research
+- URL: https://www.microsoft.com/en-us/research/publication/mind-a-large-scale-dataset-for-news-recommendation/
+- Evidence level: research-dataset
+- Relevance: Establishes that news recommendation quality depends on news content understanding and user interest modeling. This project should not claim strong personalization until it has explicit user interest signals and evaluation data.
+
+### `bib-explainable-rec-survey`
+
+- Title: Explainable Recommendation: A Survey and New Perspectives
+- Publisher: Foundations and Trends in Information Retrieval / arXiv
+- URL: https://arxiv.org/abs/1804.11192
+- Evidence level: research-survey
+- Relevance: Frames explainable recommendation around what, when, who, where, and why. Supports requiring every ranked work to expose reason codes and evidence refs rather than only a numeric score.
+
+### `bib-beyond-accuracy-rec`
+
+- Title: Beyond-Accuracy: A Review on Diversity, Serendipity, and Fairness in Recommender Systems Based on Graph Neural Networks
+- Publisher: Frontiers in Big Data / PMC
+- URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC10762851/
+- Evidence level: research-survey
+- Relevance: Shows that accuracy alone is insufficient for recommendation quality. Supports explicit diversity, novelty, serendipity, and fairness/bias checks before optimizing a single relevance score.
+
+### `bib-editorial-values-news-rec`
+
+- Title: Beyond Optimizing for Clicks: Incorporating Editorial Values in News Recommendation
+- Publisher: arXiv
+- URL: https://arxiv.org/abs/2004.09980
+- Evidence level: research
+- Relevance: Studies recommendation against editorial values such as serendipity, dynamism, diversity, and coverage. Supports this repo's plan to rank for user value and public importance, not engagement.
+
+### `bib-news-transparency-control-2024`
+
+- Title: Exploring Users' Desire for Transparency and Control in News Recommender Systems: A Five-Nation Study
+- Publisher: Journalism / Sage
+- URL: https://journals.sagepub.com/doi/10.1177/14648849231222099
+- Evidence level: research
+- Relevance: Supports the product requirement that news ranking expose controls and explanations, especially because personalized news can have broader societal implications.
+
+### `bib-tdt-nist`
+
+- Title: Topic Detection and Tracking Evaluation Overview
+- Publisher: NIST
+- URL: https://www.nist.gov/publications/topic-detection-and-tracking-evaluation-overview
+- Evidence level: research-methodology
+- Relevance: Defines event-oriented news tasks such as topic tracking, link detection, topic detection, first-story detection, and story segmentation. Useful for distinguishing trending events from duplicate articles.
+
+### `bib-nist-ai-rmf`
+
+- Title: Artificial Intelligence Risk Management Framework (AI RMF 1.0)
+- Publisher: NIST
+- URL: https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10
+- Evidence level: standard
+- Relevance: Provides risk-management framing for AI systems. Ranking and curation agents should be governed, mapped, measured, and managed before they mutate reader or graph state.
+
+### `bib-reuters-digital-news-report-2024`
+
+- Title: Digital News Report 2024
+- Publisher: Reuters Institute for the Study of Journalism
+- URL: https://reutersinstitute.politics.ox.ac.uk/digital-news-report/2024
+- Evidence level: industry-research
+- Relevance: Documents news avoidance, news overload, trust concerns, and platform shifts. Supports building a calmer triage system instead of another high-volume headline feed.
+
+### `bib-trust-project-indicators`
+
+- Title: Trust Indicators Explained
+- Publisher: The Trust Project
+- URL: https://thetrustproject.org/
+- Evidence level: implementation-standard
+- Relevance: Provides source transparency dimensions such as ownership, author, method, sourcing, and corrections. Useful as candidate fields for user-owned source assessments, not as an automatic truth label.
 
 ## Local Architecture References
 
