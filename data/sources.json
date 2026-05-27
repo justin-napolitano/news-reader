@@ -23,13 +23,6 @@
       "allowHosts": ["www.nytimes.com", "nytimes.com"]
     },
     {
-      "id": "bbc-world",
-      "name": "BBC",
-      "section": "World",
-      "feedUrl": "https://feeds.bbci.co.uk/news/world/rss.xml",
-      "allowHosts": ["www.bbc.com", "bbc.com", "www.bbc.co.uk", "bbc.co.uk"]
-    },
-    {
       "id": "guardian-world",
       "name": "The Guardian",
       "section": "World",
