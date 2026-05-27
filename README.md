@@ -107,6 +107,7 @@ This repo now exposes read-only normalized graph objects:
 - `POST /api/life-graph/import/dry-run`
 - `POST /api/life-graph/import/remote-dry-run`
 - `POST /api/life-graph/import/apply`
+- `POST /api/items/refresh`
 - `GET /api/life-graph/intel/sources`
 - `GET /api/life-graph/intel/works`
 - `GET /api/life-graph/intel/reader/works`

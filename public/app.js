@@ -193,20 +193,21 @@ async function loadSources() {
 }
 
 async function loadArticles({ refresh = false } = {}) {
+  els.status.classList.remove("error");
   els.status.textContent = refresh ? "Refreshing..." : "Loading feed...";
+  els.refresh.disabled = true;
 
   try {
     const params = new URLSearchParams({ view: state.activeView });
+    const endpoint = refresh ? "/api/items/refresh" : `/api/items?${params.toString()}`;
+    const options = refresh ? { method: "POST" } : {};
 
-    if (refresh) {
-      params.set("refresh", "1");
-    }
-
-    const response = await fetch(`/api/items?${params.toString()}`);
+    const response = await fetch(refresh ? `${endpoint}?${params.toString()}` : endpoint, options);
     const payload = await response.json();
 
     if (!response.ok) {
-      throw new Error(payload.error || "Unable to load feed.");
+      const blocker = Array.isArray(payload.blockers) ? payload.blockers[0] : null;
+      throw new Error(blocker?.message || payload.error || "Unable to load feed.");
     }
 
     state.articles = payload.items || [];
@@ -217,6 +218,8 @@ async function loadArticles({ refresh = false } = {}) {
   } catch (err) {
     els.status.textContent = err instanceof Error ? err.message : String(err);
     els.status.classList.add("error");
+  } finally {
+    els.refresh.disabled = false;
   }
 }
 
