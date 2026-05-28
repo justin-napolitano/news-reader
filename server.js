@@ -24,6 +24,8 @@ const {
   listLifeGraphReaderWorks,
   remoteData,
   sendNewsReaderImport,
+  setLifeGraphIntelSourceEnabled,
+  upsertLifeGraphIntelSource,
   updateLifeGraphReaderState
 } = require("./src/life-graph-client");
 
@@ -261,11 +263,20 @@ function blockerHttpStatus(blockers) {
   }
 
   if (
+    codes.has("news_reader_source_id_required") ||
+    codes.has("news_reader_source_name_required") ||
+    codes.has("news_reader_source_feed_url_required") ||
+    codes.has("news_reader_source_feed_url_invalid") ||
+    codes.has("news_reader_source_allow_hosts_invalid") ||
     codes.has("news_reader_cron_secret_missing") ||
     codes.has("life_graph_api_base_url_missing") ||
     codes.has("life_graph_write_token_missing")
   ) {
-    return 503;
+    return codes.has("news_reader_cron_secret_missing") ||
+      codes.has("life_graph_api_base_url_missing") ||
+      codes.has("life_graph_write_token_missing")
+      ? 503
+      : 400;
   }
 
   return blockers?.length ? 502 : 200;
@@ -755,6 +766,180 @@ async function lifeGraphIntelSourcesPayload() {
   });
 }
 
+function readerSourceFromLifeGraphSource(source) {
+  const readerSource = intelSourceToReaderSource(source);
+  const payload = source.payload && typeof source.payload === "object" ? source.payload : {};
+
+  return {
+    ...readerSource,
+    sourceType: source.source_type || "publisher",
+    canonicalUrl: source.canonical_url || source.source_url || "",
+    sourceUrl: source.source_url || source.canonical_url || "",
+    tags: Array.isArray(source.tags) ? source.tags : [],
+    isEnabled: payload.is_enabled !== false,
+    updatedAt: source.updated_at || "",
+    sourceHash: source.source_hash || ""
+  };
+}
+
+function normalizeSourceId(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function listFromInput(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeAdminSourceInput(input) {
+  const sourceInput = input && typeof input.source === "object" ? input.source : input || {};
+  const name = String(sourceInput.name || "").trim();
+  const id = normalizeSourceId(sourceInput.id || sourceInput.sourceId || name);
+  const feedUrl = String(sourceInput.feedUrl || sourceInput.feed_url || "").trim();
+  const canonicalUrl = String(sourceInput.canonicalUrl || sourceInput.canonical_url || sourceInput.sourceUrl || sourceInput.source_url || "").trim();
+  const sourceUrl = String(sourceInput.sourceUrl || sourceInput.source_url || canonicalUrl || "").trim();
+  const allowHosts = listFromInput(sourceInput.allowHosts || sourceInput.allow_hosts);
+  const tags = listFromInput(sourceInput.tags);
+  const blockers = [];
+
+  if (!id) {
+    blockers.push({ code: "news_reader_source_id_required", message: "Source id is required." });
+  }
+  if (!name) {
+    blockers.push({ code: "news_reader_source_name_required", message: "Source name is required." });
+  }
+  if (!feedUrl) {
+    blockers.push({ code: "news_reader_source_feed_url_required", message: "Feed URL is required." });
+  } else {
+    try {
+      const parsed = new URL(feedUrl);
+
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        blockers.push({ code: "news_reader_source_feed_url_invalid", message: "Feed URL must use http or https." });
+      } else if (!allowHosts.length) {
+        allowHosts.push(parsed.hostname);
+      }
+    } catch (_err) {
+      blockers.push({ code: "news_reader_source_feed_url_invalid", message: "Feed URL must be a valid URL." });
+    }
+  }
+
+  if (sourceInput.allowHosts && !Array.isArray(sourceInput.allowHosts) && typeof sourceInput.allowHosts !== "string") {
+    blockers.push({ code: "news_reader_source_allow_hosts_invalid", message: "Allow hosts must be a comma-separated string or list." });
+  }
+
+  return {
+    ok: blockers.length === 0,
+    source: {
+      id,
+      source_type: "publisher",
+      name,
+      section: String(sourceInput.section || "").trim(),
+      canonical_url: canonicalUrl,
+      source_url: sourceUrl,
+      feed_url: feedUrl,
+      allow_hosts: allowHosts,
+      tags,
+      rights: { full_text_storage: "metadata_only" },
+      provenance: {
+        sources: [{ type: "news_reader_admin", source: "admin source panel" }]
+      },
+      is_enabled: sourceInput.isEnabled !== false && sourceInput.is_enabled !== false
+    },
+    blockers
+  };
+}
+
+async function adminSourcesPayload() {
+  const remote = await listLifeGraphIntelSources({ limit: 500, includeDisabled: true });
+  const data = remoteData(remote.response);
+  const sources = Array.isArray(data.sources) ? data.sources.map(readerSourceFromLifeGraphSource) : [];
+
+  return apiResponse("news_reader_admin_sources", {
+    sources: sources.length
+      ? sources
+      : loadSources().map((source) => ({ ...source, isEnabled: true, sourceType: "publisher" })),
+    count: sources.length,
+    source: sources.length ? "life_graph" : "feed_fallback",
+    config: lifeGraphConfigStatus(),
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [
+      { type: "life_graph_api", source: "/api/intel/sources?include_disabled=1" },
+      { type: "repo_local", source: "data/sources.json" }
+    ]
+  });
+}
+
+async function upsertAdminSourcePayload(body) {
+  const normalized = normalizeAdminSourceInput(body);
+
+  if (!normalized.ok) {
+    return apiResponse("news_reader_admin_source_upsert", { source: normalized.source }, { blockers: normalized.blockers });
+  }
+
+  const remote = await upsertLifeGraphIntelSource({ source: normalized.source });
+  const data = remoteData(remote.response);
+
+  return apiResponse("news_reader_admin_source_upsert", {
+    source: data.source ? readerSourceFromLifeGraphSource(data.source) : normalized.source,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [
+      { type: "news_reader_admin", source: "/api/admin/sources" },
+      { type: "life_graph_api", source: "/api/intel/sources" }
+    ],
+    next_actions: remote.ok
+      ? [
+          {
+            action: "refresh_news_import",
+            path: "/api/items/refresh",
+            reason: "A newly added source needs a feed refresh before its articles appear."
+          }
+        ]
+      : []
+  });
+}
+
+async function setAdminSourceStatePayload(body) {
+  const sourceId = String(body.source_id || body.sourceId || body.id || "").trim();
+
+  if (!sourceId) {
+    return apiResponse("news_reader_admin_source_state", null, {
+      blockers: [{ code: "news_reader_source_id_required", message: "Source id is required." }]
+    });
+  }
+
+  const remote = await setLifeGraphIntelSourceEnabled({
+    sourceId,
+    enabled: body.enabled !== false
+  });
+  const data = remoteData(remote.response);
+
+  return apiResponse("news_reader_admin_source_state", {
+    source: data.source ? readerSourceFromLifeGraphSource(data.source) : null,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [
+      { type: "news_reader_admin", source: "/api/admin/sources/state" },
+      { type: "life_graph_api", source: "/api/intel/sources/{source_id}/state" }
+    ]
+  });
+}
+
 async function lifeGraphIntelWorksPayload({ sourceId = "", limit = 160 } = {}) {
   const remote = await listLifeGraphIntelWorks({ sourceId, limit });
   const data = remoteData(remote.response);
@@ -1126,6 +1311,7 @@ async function handle(req, res) {
     "/api/life-graph/import/remote-dry-run",
     "/api/life-graph/import/apply",
     "/api/items/refresh",
+    "/api/admin/sources/state",
     "/api/life-graph/intel/reader/state",
     "/api/life-graph/intel/retention/apply"
   ]);
@@ -1145,6 +1331,11 @@ async function handle(req, res) {
       redirect(res, "/login", {
         "set-cookie": clearSessionCookie(authConfig())
       });
+      return;
+    }
+
+    if (requestUrl.pathname === "/admin") {
+      redirect(res, "/admin.html");
       return;
     }
 
@@ -1182,6 +1373,26 @@ async function handle(req, res) {
 
     if (requestUrl.pathname === "/api/sources") {
       sendJson(res, 200, await readerSourcesPayload());
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/sources" && req.method === "GET") {
+      const payload = await adminSourcesPayload();
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/sources") {
+      const body = await readJsonBody(req);
+      const payload = await upsertAdminSourcePayload(body);
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/sources/state") {
+      const body = await readJsonBody(req);
+      const payload = await setAdminSourceStatePayload(body);
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
       return;
     }
 

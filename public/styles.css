@@ -89,7 +89,19 @@ h2 {
   letter-spacing: 0;
 }
 
-#refresh-button {
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#refresh-button,
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 36px;
   padding: 0 13px;
   color: var(--paper);
@@ -98,6 +110,12 @@ h2 {
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.button-link {
+  color: var(--ink);
+  background: transparent;
+  border-color: var(--line);
 }
 
 .view-strip,
@@ -338,6 +356,143 @@ h2 {
   color: var(--error);
 }
 
+.admin-shell .topbar {
+  align-items: flex-start;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: start;
+  max-width: 1180px;
+}
+
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: clamp(18px, 3vw, 28px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.panel-label {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-panel h2 {
+  font-size: clamp(24px, 4vw, 44px);
+}
+
+.admin-panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-panel input {
+  min-height: 42px;
+  padding: 0 11px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  text-transform: none;
+}
+
+.admin-panel button {
+  min-height: 38px;
+  padding: 0 13px;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-status {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.source-manager-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.source-manager-head button,
+.admin-source-actions button {
+  color: var(--ink);
+  background: transparent;
+  border-color: var(--line);
+}
+
+.admin-source-list {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.admin-source-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.admin-source-list li.is-disabled {
+  opacity: 0.55;
+}
+
+.admin-source-body {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-source-body strong {
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.1;
+}
+
+.admin-source-body span,
+.admin-source-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.admin-source-body p {
+  overflow-wrap: anywhere;
+}
+
+.admin-source-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 @media (max-width: 860px) {
   .app-shell {
     padding: 14px 16px 28px;
@@ -345,6 +500,14 @@ h2 {
 
   .topbar {
     padding-top: 12px;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-source-list li {
+    flex-direction: column;
   }
 
   .reader-panel {
