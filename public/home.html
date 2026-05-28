@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11110f" />
+    <title>News Reader</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell public-reader-page">
+      <header class="topbar public-reader-topbar">
+        <div>
+          <p class="eyebrow">Public reader</p>
+          <h1>News Reader</h1>
+        </div>
+        <a class="admin-link" href="/login?next=%2Findex.html">Login</a>
+      </header>
+
+      <section class="public-reader-intro">
+        <p id="public-status">Loading reader graph...</p>
+        <p id="public-count"></p>
+      </section>
+
+      <section class="source-strip public-source-strip" id="public-source-strip" aria-label="Sources"></section>
+
+      <section class="feed-page public-feed-page" aria-label="Public articles">
+        <ol id="public-article-list" class="article-list"></ol>
+      </section>
+    </main>
+
+    <script src="/public-home.js"></script>
+  </body>
+</html>
