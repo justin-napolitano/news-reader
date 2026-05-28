@@ -26,6 +26,7 @@ const views = [
 ];
 
 const initialParams = new URLSearchParams(window.location.search);
+const listBasePath = window.location.pathname === "/index.html" ? "/index.html" : "/";
 
 state.activeView = normalizeView(initialParams.get("view"));
 state.activeSource = initialParams.get("source") || "all";
@@ -172,7 +173,7 @@ function currentListPath() {
   }
 
   const query = params.toString();
-  return query ? `/?${query}` : "/";
+  return query ? `${listBasePath}?${query}` : listBasePath;
 }
 
 function syncListUrl() {

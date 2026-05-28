@@ -59,10 +59,21 @@ async function request(path, options = {}) {
 async function main() {
   await wait(500);
 
-  const guardedHome = await fetch(`${BASE_URL}/`, { redirect: "manual" });
+  const publicHome = await request("/", { auth: false });
 
-  if (guardedHome.status !== 303 || !guardedHome.headers.get("location")?.startsWith("/login")) {
-    throw new Error("home page did not redirect unauthenticated users to login");
+  if (!publicHome.text.includes("Public reader") || !publicHome.text.includes("/public-home.js")) {
+    throw new Error("public home page did not render the read-only reader shell");
+  }
+
+  const publicCurrentArticle = await request("/api/public/current-article", { auth: false });
+  const publicCurrentPayload = JSON.parse(publicCurrentArticle.text);
+
+  if (!publicCurrentPayload.ok || publicCurrentPayload.data?.item?.title !== "Fixture story one") {
+    throw new Error("public current article endpoint did not expose the fixture reader item");
+  }
+
+  if (publicCurrentArticle.text.includes("readerState") || publicCurrentArticle.text.includes("work_id")) {
+    throw new Error("public current article endpoint leaked private reader state");
   }
 
   const guardedItems = await fetch(`${BASE_URL}/api/items`);
@@ -105,10 +116,10 @@ async function main() {
 
   sessionCookie = login.headers.get("set-cookie").split(";")[0];
 
-  const home = await request("/");
+  const home = await request("/index.html");
 
   if (!home.text.includes("News Reader") || !home.text.includes("view-strip") || !home.text.includes("/admin")) {
-    throw new Error("home page did not render News Reader");
+    throw new Error("authenticated reader page did not render News Reader");
   }
 
   const adminPage = await request("/admin.html");
@@ -364,6 +375,7 @@ async function main() {
         ok: true,
         checked: [
           "home",
+          "public read-only article",
           "login gate",
           "cron auth gate",
           "login form",

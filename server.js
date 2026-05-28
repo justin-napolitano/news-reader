@@ -46,6 +46,7 @@ const REQUEST_TIMEOUT_MS = 12000;
 const USER_AGENT = "NewsReader/0.1 (+local personal reader)";
 const SESSION_COOKIE = "news_reader_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+const PUBLIC_STATIC_PATHS = new Set(["/styles.css", "/public-home.js"]);
 
 let feedCache = { fetchedAt: 0, payload: null };
 let refreshStatus = {
@@ -1478,6 +1479,34 @@ async function refreshReaderItemsPayload({ view = "unread" } = {}) {
   };
 }
 
+function publicReaderItem(item) {
+  if (!item) {
+    return null;
+  }
+
+  return {
+    source: item.source || "",
+    section: item.section || "",
+    title: item.title || "Untitled",
+    url: item.url || "",
+    publishedAt: item.publishedAt || null,
+    excerpt: item.excerpt || ""
+  };
+}
+
+async function publicCurrentArticlePayload() {
+  const payload = await readerItemsPayload({ refresh: false, view: "unread" });
+  const items = Array.isArray(payload.items) ? payload.items : [];
+
+  return apiResponse("public.current_article", {
+    generatedAt: payload.generatedAt || new Date().toISOString(),
+    source: payload.source || payload.view || "reader",
+    view: payload.view || "unread",
+    errors: payload.errors || [],
+    item: publicReaderItem(items[0])
+  });
+}
+
 function hostAllowed(articleUrl, sources) {
   const parsed = new URL(articleUrl);
   const host = parsed.hostname.replace(/^www\./, "");
@@ -1610,6 +1639,26 @@ async function handle(req, res) {
   try {
     if (requestUrl.pathname === "/api/health") {
       sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === "GET" && requestUrl.pathname === "/") {
+      serveStatic(req, res, "/home.html");
+      return;
+    }
+
+    if (req.method === "GET" && PUBLIC_STATIC_PATHS.has(requestUrl.pathname)) {
+      serveStatic(req, res, requestUrl.pathname);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/public/current-article") {
+      if (req.method !== "GET") {
+        sendJson(res, 405, { error: "Method not allowed" });
+        return;
+      }
+
+      sendJson(res, 200, await publicCurrentArticlePayload());
       return;
     }
 

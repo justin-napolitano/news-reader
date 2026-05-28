@@ -300,6 +300,17 @@ h2 {
   opacity: 0.7;
 }
 
+.admin-link {
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-link:hover,
+.admin-link:focus-visible {
+  color: var(--ink);
+}
+
 .reader-panel {
   max-width: 940px;
   min-height: auto;
@@ -388,6 +399,53 @@ h2 {
 
 .reader-body p {
   margin: 0 0 1.05em;
+}
+
+.public-reader-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.public-reader-topbar {
+  align-items: flex-start;
+}
+
+.public-article-panel {
+  margin-top: clamp(22px, 5vw, 52px);
+}
+
+.public-article-panel h2 {
+  max-width: 840px;
+  font-size: clamp(28px, 4.5vw, 58px);
+  line-height: 1.02;
+}
+
+.public-article-meta {
+  min-height: 1.1em;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.public-reader-body {
+  max-width: 760px;
+}
+
+.public-original-link {
+  margin: 8px 0 0;
+}
+
+.public-original-link a {
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.public-original-link a:hover,
+.public-original-link a:focus-visible {
+  color: var(--ink);
 }
 
 .review-shell {
