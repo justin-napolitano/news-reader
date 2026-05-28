@@ -1,4 +1,5 @@
 const LIST_CONTEXT_KEY = "news-reader:list-context";
+const RELEVANCE_KEY = "news-reader:relevance-controls";
 
 const state = {
   articles: [],
@@ -55,11 +56,86 @@ function formatDate(value) {
 }
 
 function filteredArticles() {
-  if (state.activeSource === "all") {
-    return state.articles;
+  const controls = loadRelevanceControls();
+  const sourceFiltered =
+    state.activeSource === "all"
+      ? state.articles
+      : state.articles.filter((article) => article.sourceId === state.activeSource);
+
+  return sourceFiltered
+    .map((article, index) => ({ ...article, relevance: relevanceForArticle(article, controls), originalIndex: index }))
+    .filter((article) => !article.relevance.hidden)
+    .sort((left, right) => {
+      if (right.relevance.score !== left.relevance.score) {
+        return right.relevance.score - left.relevance.score;
+      }
+
+      return left.originalIndex - right.originalIndex;
+    });
+}
+
+function loadRelevanceControls() {
+  try {
+    const controls = JSON.parse(window.localStorage.getItem(RELEVANCE_KEY) || "{}");
+
+    return {
+      priorityTerms: normalizeTerms(controls.priorityTerms),
+      hiddenTerms: normalizeTerms(controls.hiddenTerms),
+      prioritySources: normalizeTerms(controls.prioritySources)
+    };
+  } catch (_err) {
+    return { priorityTerms: [], hiddenTerms: [], prioritySources: [] };
+  }
+}
+
+function normalizeTerms(value) {
+  return Array.isArray(value)
+    ? value.map((term) => String(term).trim().toLowerCase()).filter(Boolean)
+    : [];
+}
+
+function articleText(article) {
+  return [article.title, article.excerpt, article.source, article.section].filter(Boolean).join(" ").toLowerCase();
+}
+
+function matchedTerms(text, terms) {
+  return terms.filter((term) => text.includes(term)).slice(0, 4);
+}
+
+function sourceMatches(article, prioritySources) {
+  const sourceText = [article.sourceId, article.source].filter(Boolean).join(" ").toLowerCase();
+
+  return prioritySources.filter((source) => sourceText.includes(source)).slice(0, 2);
+}
+
+function relevanceForArticle(article, controls) {
+  const text = articleText(article);
+  const hiddenMatches = matchedTerms(text, controls.hiddenTerms);
+
+  if (hiddenMatches.length) {
+    return {
+      hidden: true,
+      score: -100,
+      reasons: [`Hidden term: ${hiddenMatches.join(", ")}`]
+    };
   }
 
-  return state.articles.filter((article) => article.sourceId === state.activeSource);
+  const priorityMatches = matchedTerms(text, controls.priorityTerms);
+  const sourcePriorityMatches = sourceMatches(article, controls.prioritySources);
+  const score = priorityMatches.length * 3 + sourcePriorityMatches.length * 2;
+  const reasons = [];
+
+  if (priorityMatches.length) {
+    reasons.push(`Matches: ${priorityMatches.join(", ")}`);
+  }
+  if (sourcePriorityMatches.length) {
+    reasons.push(`Priority source: ${article.source}`);
+  }
+  if (!reasons.length) {
+    reasons.push([article.source, article.section].filter(Boolean).join(" / "));
+  }
+
+  return { hidden: false, score, reasons };
 }
 
 function currentListPath() {
@@ -259,6 +335,7 @@ function renderArticles() {
     const meta = document.createElement("div");
     const title = document.createElement("span");
     const excerpt = document.createElement("p");
+    const why = document.createElement("div");
     const controls = document.createElement("div");
     const primaryAction = document.createElement("button");
     const secondaryAction = document.createElement("button");
@@ -279,7 +356,9 @@ function renderArticles() {
     title.textContent = article.title;
     excerpt.className = "article-excerpt";
     excerpt.textContent = article.excerpt || "No feed summary available.";
-    link.append(meta, title, excerpt);
+    why.className = "article-why";
+    why.textContent = `Why: ${article.relevance.reasons.join(" / ")}`;
+    link.append(meta, title, excerpt, why);
     li.appendChild(link);
     if (canUpdateState) {
       controls.className = "article-actions";

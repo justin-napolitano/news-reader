@@ -1,12 +1,19 @@
+const RELEVANCE_KEY = "news-reader:relevance-controls";
+
 const state = {
   sources: []
 };
 
 const els = {
   form: document.querySelector("#source-form"),
+  relevanceForm: document.querySelector("#relevance-form"),
   status: document.querySelector("#admin-status"),
+  relevanceStatus: document.querySelector("#relevance-status"),
   list: document.querySelector("#admin-source-list"),
-  reload: document.querySelector("#reload-sources")
+  healthList: document.querySelector("#source-health-list"),
+  reload: document.querySelector("#reload-sources"),
+  checkHealth: document.querySelector("#check-health"),
+  clearRelevance: document.querySelector("#clear-relevance")
 };
 
 function listFromField(value) {
@@ -66,6 +73,41 @@ function setStatus(message, isError = false) {
   els.status.classList.toggle("error", isError);
 }
 
+function setRelevanceStatus(message, isError = false) {
+  els.relevanceStatus.textContent = message;
+  els.relevanceStatus.classList.toggle("error", isError);
+}
+
+function loadRelevanceControls() {
+  try {
+    return JSON.parse(window.localStorage.getItem(RELEVANCE_KEY) || "{}");
+  } catch (_err) {
+    return {};
+  }
+}
+
+function saveRelevanceControls(controls) {
+  window.localStorage.setItem(RELEVANCE_KEY, JSON.stringify({ version: 1, ...controls }));
+}
+
+function fillRelevanceForm() {
+  const controls = loadRelevanceControls();
+
+  els.relevanceForm.elements.priorityTerms.value = (controls.priorityTerms || []).join(", ");
+  els.relevanceForm.elements.hiddenTerms.value = (controls.hiddenTerms || []).join(", ");
+  els.relevanceForm.elements.prioritySources.value = (controls.prioritySources || []).join(", ");
+}
+
+function relevanceFromForm() {
+  const formData = new FormData(els.relevanceForm);
+
+  return {
+    priorityTerms: listFromField(formData.get("priorityTerms")).map((term) => term.toLowerCase()),
+    hiddenTerms: listFromField(formData.get("hiddenTerms")).map((term) => term.toLowerCase()),
+    prioritySources: listFromField(formData.get("prioritySources")).map((term) => term.toLowerCase())
+  };
+}
+
 function renderSources() {
   els.list.innerHTML = "";
 
@@ -123,6 +165,42 @@ async function loadSources() {
   }
 }
 
+function renderHealth(sources) {
+  els.healthList.innerHTML = "";
+
+  sources.forEach((source) => {
+    const li = document.createElement("li");
+    const body = document.createElement("div");
+    const name = document.createElement("strong");
+    const meta = document.createElement("span");
+    const details = document.createElement("p");
+
+    li.className = source.ok ? "" : "is-disabled";
+    body.className = "admin-source-body";
+    name.textContent = source.name || source.id;
+    meta.textContent = [source.status, `${source.itemCount} items`, `${source.responseMs}ms`].filter(Boolean).join(" / ");
+    details.textContent = source.message || source.feedUrl || "";
+    body.append(name, meta, details);
+    li.appendChild(body);
+    els.healthList.appendChild(li);
+  });
+}
+
+async function checkHealth() {
+  els.checkHealth.disabled = true;
+  setStatus("Checking source health...");
+
+  try {
+    const payload = await api("/api/admin/sources/health");
+    renderHealth(payload.data?.sources || []);
+    setStatus(`${payload.data?.ok_count || 0}/${payload.data?.count || 0} sources healthy.`);
+  } catch (err) {
+    setStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.checkHealth.disabled = false;
+  }
+}
+
 async function saveSource(event) {
   event.preventDefault();
   const submit = els.form.querySelector("button[type='submit']");
@@ -160,6 +238,28 @@ async function setSourceEnabled(sourceId, enabled) {
   }
 }
 
+function saveRelevance(event) {
+  event.preventDefault();
+
+  try {
+    saveRelevanceControls(relevanceFromForm());
+    setRelevanceStatus("Controls saved.");
+  } catch (err) {
+    setRelevanceStatus(err instanceof Error ? err.message : String(err), true);
+  }
+}
+
+function clearRelevance() {
+  window.localStorage.removeItem(RELEVANCE_KEY);
+  fillRelevanceForm();
+  setRelevanceStatus("Controls cleared.");
+}
+
 els.form.addEventListener("submit", saveSource);
+els.relevanceForm.addEventListener("submit", saveRelevance);
 els.reload.addEventListener("click", loadSources);
+els.checkHealth.addEventListener("click", checkHealth);
+els.clearRelevance.addEventListener("click", clearRelevance);
+fillRelevanceForm();
 loadSources();
+checkHealth();

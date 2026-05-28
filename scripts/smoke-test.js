@@ -113,7 +113,12 @@ async function main() {
 
   const adminPage = await request("/admin.html");
 
-  if (!adminPage.text.includes("Save Source") || !adminPage.text.includes("/admin.js")) {
+  if (
+    !adminPage.text.includes("Save Source") ||
+    !adminPage.text.includes("Source health") ||
+    !adminPage.text.includes("Relevance") ||
+    !adminPage.text.includes("/admin.js")
+  ) {
     throw new Error("admin page did not render the source manager shell");
   }
 
@@ -146,6 +151,17 @@ async function main() {
     refreshItemsPayload.refresh?.mode !== "feed"
   ) {
     throw new Error("reader refresh endpoint did not return refreshed fixture items");
+  }
+
+  const sourceHealth = await request("/api/admin/sources/health");
+  const sourceHealthPayload = JSON.parse(sourceHealth.text);
+
+  if (
+    !sourceHealthPayload.ok ||
+    sourceHealthPayload.data?.count !== 1 ||
+    sourceHealthPayload.data?.sources?.[0]?.itemCount !== 2
+  ) {
+    throw new Error("source health endpoint did not check fixture source health");
   }
 
   const graphSources = await request("/api/graph/sources");
@@ -295,6 +311,7 @@ async function main() {
           "sources",
           "fixture feed",
           "reader refresh",
+          "source health",
           "graph sources",
           "graph contracts",
           "graph works",

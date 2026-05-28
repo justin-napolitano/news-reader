@@ -940,6 +940,97 @@ async function setAdminSourceStatePayload(body) {
   });
 }
 
+async function fetchSourceFeedText(source) {
+  if (process.env.NEWS_READER_FIXTURE === "1" && String(source.feedUrl || "").startsWith("fixture://")) {
+    return fs.readFileSync(path.join(ROOT, "test", "fixtures", "feed.xml"), "utf8");
+  }
+
+  return fetchText(source.feedUrl);
+}
+
+async function checkSourceHealth(source) {
+  const checkedAt = new Date().toISOString();
+  const startedAt = Date.now();
+  const feedUrl = source.feedUrl || source.feed_url || "";
+
+  if (source.isEnabled === false) {
+    return {
+      id: source.id,
+      name: source.name,
+      feedUrl,
+      ok: true,
+      status: "disabled",
+      itemCount: 0,
+      checkedAt,
+      responseMs: 0,
+      message: "Source is disabled."
+    };
+  }
+
+  if (!feedUrl) {
+    return {
+      id: source.id,
+      name: source.name,
+      feedUrl,
+      ok: false,
+      status: "blocked",
+      itemCount: 0,
+      checkedAt,
+      responseMs: 0,
+      message: "Source has no feed URL."
+    };
+  }
+
+  try {
+    const xml = await fetchSourceFeedText({ ...source, feedUrl });
+    const items = parseFeed(xml, { ...source, feedUrl });
+
+    return {
+      id: source.id,
+      name: source.name,
+      feedUrl,
+      ok: items.length > 0,
+      status: items.length > 0 ? "ok" : "empty",
+      itemCount: items.length,
+      checkedAt,
+      responseMs: Date.now() - startedAt,
+      message: items.length > 0 ? "" : "Feed returned no readable items."
+    };
+  } catch (err) {
+    return {
+      id: source.id,
+      name: source.name,
+      feedUrl,
+      ok: false,
+      status: "error",
+      itemCount: 0,
+      checkedAt,
+      responseMs: Date.now() - startedAt,
+      message: err instanceof Error ? err.message : String(err)
+    };
+  }
+}
+
+async function adminSourceHealthPayload() {
+  const sourcePayload = await readerSourcesPayload();
+  const sources = Array.isArray(sourcePayload.sources) ? sourcePayload.sources : [];
+  const health = await Promise.all(sources.map((source) => checkSourceHealth(source)));
+
+  return apiResponse("news_reader_admin_source_health", {
+    checked_at: new Date().toISOString(),
+    source: sourcePayload.source || "unknown",
+    sources: health,
+    count: health.length,
+    ok_count: health.filter((source) => source.ok).length,
+    error_count: health.filter((source) => !source.ok).length
+  }, {
+    provenance: [
+      { type: "news_reader", source: "/api/sources" },
+      { type: "rss_feed", source: "configured source feed URLs" }
+    ]
+  });
+}
+
 async function lifeGraphIntelWorksPayload({ sourceId = "", limit = 160 } = {}) {
   const remote = await listLifeGraphIntelWorks({ sourceId, limit });
   const data = remoteData(remote.response);
@@ -1379,6 +1470,11 @@ async function handle(req, res) {
     if (requestUrl.pathname === "/api/admin/sources" && req.method === "GET") {
       const payload = await adminSourcesPayload();
       sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/sources/health") {
+      sendJson(res, 200, await adminSourceHealthPayload());
       return;
     }
 

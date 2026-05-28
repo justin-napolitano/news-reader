@@ -215,6 +215,13 @@ h2 {
   line-height: 1.45;
 }
 
+.article-why {
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .article-list li {
   border-bottom: 1px solid var(--line);
 }
@@ -431,6 +438,12 @@ h2 {
   font-weight: 700;
 }
 
+.admin-inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .source-manager-head {
   display: flex;
   justify-content: space-between;
@@ -458,6 +471,10 @@ h2 {
   gap: 18px;
   padding: 16px 0;
   border-top: 1px solid var(--line);
+}
+
+.compact-list li {
+  padding: 12px 0;
 }
 
 .admin-source-list li.is-disabled {
