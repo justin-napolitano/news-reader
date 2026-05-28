@@ -347,38 +347,70 @@ function loginPage({ error = "", configured = true, next = "/" } = {}) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#047857" />
     <title>News Reader Login</title>
+    <link rel="stylesheet" href="/styles.css" />
     <style>
       :root { color-scheme: light; --paper: #f7f7f2; --ink: #11110f; --muted: #62625c; --line: #d8d6cf; --accent: #047857; --error: #9f1239; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
-      body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 18px; color: var(--ink); background: var(--accent); text-rendering: geometricPrecision; }
-      main { width: min(100%, 420px); padding: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+      body { min-height: 100svh; margin: 0; padding: 18px; color: var(--ink); background: var(--accent); text-rendering: geometricPrecision; }
+      .login-shell { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 18px; width: min(100%, 1180px); margin: 0 auto; align-items: start; }
+      .login-card, .login-public-preview { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+      .login-card { padding: 28px; }
+      .login-public-preview { max-height: calc(100svh - 36px); overflow: auto; padding: 24px clamp(18px, 3vw, 32px); }
       p, h1 { margin-top: 0; }
-      h1 { margin-bottom: 10px; font-size: clamp(38px, 12vw, 72px); line-height: 0.92; font-weight: 520; letter-spacing: 0; }
-      p { color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
-      form { display: grid; gap: 12px; margin-top: 24px; }
-      label { display: grid; gap: 7px; color: var(--muted); font-size: 0.76rem; font-weight: 800; text-transform: uppercase; }
-      input { min-height: 44px; width: 100%; padding: 0 12px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
-      button { min-height: 44px; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+      .login-card h1 { margin-bottom: 10px; font-size: clamp(38px, 12vw, 72px); line-height: 0.92; font-weight: 520; letter-spacing: 0; }
+      .login-card p { color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+      .login-card form { display: grid; gap: 12px; margin-top: 24px; }
+      .login-card label { display: grid; gap: 7px; color: var(--muted); font-size: 0.76rem; font-weight: 800; text-transform: uppercase; }
+      .login-card input { min-height: 44px; width: 100%; padding: 0 12px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+      .login-card button { min-height: 44px; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+      .login-public-preview h2 { max-width: 760px; font-size: clamp(28px, 4vw, 56px); }
+      .login-public-preview .public-reader-intro { max-width: none; }
+      .login-public-preview .public-source-strip { padding-bottom: 10px; }
+      .login-public-preview .public-feed-page { min-height: 0; max-width: none; }
+      .login-public-preview .article-title { font-size: clamp(18px, 2vw, 30px); }
+      .login-public-preview .article-excerpt { max-width: 700px; }
       .error { color: var(--error); font-weight: 750; }
+      @media (max-width: 860px) {
+        .login-shell { grid-template-columns: 1fr; }
+        .login-public-preview { max-height: none; }
+      }
     </style>
   </head>
   <body>
-    <main>
-      <h1>News Reader</h1>
-      <p>${escapeHtml(message)}</p>
-      ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
-      <form method="post" action="/login?next=${encodeURIComponent(safeNext)}">
-        <label>
-          Login
-          <input name="username" value="${escapeHtml(config.adminUser)}" autocomplete="username" />
-        </label>
-        <label>
-          Passcode
-          <input name="passcode" type="password" autocomplete="current-password" autofocus />
-        </label>
-        <button type="submit">Enter</button>
-      </form>
+    <main class="login-shell">
+      <section class="login-card" aria-label="Admin login">
+        <h1>News Reader</h1>
+        <p>${escapeHtml(message)}</p>
+        ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
+        <form method="post" action="/login?next=${encodeURIComponent(safeNext)}">
+          <label>
+            Login
+            <input name="username" value="${escapeHtml(config.adminUser)}" autocomplete="username" />
+          </label>
+          <label>
+            Passcode
+            <input name="passcode" type="password" autocomplete="current-password" autofocus />
+          </label>
+          <button type="submit">Enter</button>
+        </form>
+      </section>
+
+      <section class="login-public-preview" aria-label="Public reader graph">
+        <div class="reader-head">
+          <p class="eyebrow">Public reader</p>
+          <h2>Seeded article graph</h2>
+        </div>
+        <section class="public-reader-intro">
+          <p id="public-status">Loading reader graph...</p>
+          <p id="public-count"></p>
+        </section>
+        <section class="source-strip public-source-strip" id="public-source-strip" aria-label="Sources"></section>
+        <section class="feed-page public-feed-page" aria-label="Public articles">
+          <ol id="public-article-list" class="article-list"></ol>
+        </section>
+      </section>
     </main>
+    <script src="/public-home.js"></script>
   </body>
 </html>`;
 }
