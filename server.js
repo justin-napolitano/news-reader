@@ -47,6 +47,16 @@ const SESSION_COOKIE = "news_reader_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 let feedCache = { fetchedAt: 0, payload: null };
+let refreshStatus = {
+  last_attempt_at: "",
+  last_success_at: "",
+  ok: null,
+  mode: "",
+  item_count: 0,
+  source: "",
+  remote_counts: null,
+  blockers: []
+};
 const readCache = new Map();
 
 function readJson(filePath) {
@@ -732,11 +742,11 @@ async function pushLifeGraphImportPayload({ refresh = false, apply = false } = {
 }
 
 async function scheduledNewsImportPayload({ refresh = true, apply = true } = {}) {
+  const attemptedAt = new Date().toISOString();
   const importPayload = await pushLifeGraphImportPayload({ refresh, apply });
   const data = importPayload.data || {};
   const remotePayload = remoteData(data.remote);
-
-  return apiResponse("cron.news_import", {
+  const payload = apiResponse("cron.news_import", {
     applied: Boolean(apply && importPayload.ok && data.applied),
     dry_run: !apply,
     generated_at: new Date().toISOString(),
@@ -753,6 +763,19 @@ async function scheduledNewsImportPayload({ refresh = true, apply = true } = {})
     ],
     next_actions: importPayload.next_actions || []
   });
+
+  refreshStatus = {
+    last_attempt_at: attemptedAt,
+    last_success_at: payload.ok ? payload.data.generated_at : refreshStatus.last_success_at,
+    ok: payload.ok,
+    mode: apply ? "life_graph_apply" : "life_graph_dry_run",
+    item_count: data.local_import?.object_count || 0,
+    source: "cron.news_import",
+    remote_counts: remotePayload.counts || null,
+    blockers: payload.blockers || []
+  };
+
+  return payload;
 }
 
 async function lifeGraphIntelSourcesPayload() {
@@ -793,6 +816,24 @@ function normalizeSourceId(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function normalizeFeedUrl(value) {
+  try {
+    const parsed = new URL(String(value || "").trim());
+
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase();
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "") || "/";
+
+    return parsed.toString();
+  } catch (_err) {
+    return String(value || "").trim();
+  }
+}
+
+function adminSourceFeedUrl(source) {
+  return normalizeFeedUrl(source.feedUrl || source.feed_url || "");
 }
 
 function listFromInput(value) {
@@ -894,14 +935,34 @@ async function upsertAdminSourcePayload(body) {
     return apiResponse("news_reader_admin_source_upsert", { source: normalized.source }, { blockers: normalized.blockers });
   }
 
+  const requestedId = normalized.source.id;
+  const existingSources = await adminSourcesPayload();
+  const existingSource = (existingSources.data?.sources || []).find(
+    (source) => adminSourceFeedUrl(source) === normalizeFeedUrl(normalized.source.feed_url)
+  );
+
+  if (existingSource) {
+    normalized.source.id = existingSource.id;
+    normalized.source.provenance.sources.push({
+      type: "news_reader_admin",
+      source: `matched existing feed URL; requested id ${requestedId || "auto"}`
+    });
+  }
+
   const remote = await upsertLifeGraphIntelSource({ source: normalized.source });
   const data = remoteData(remote.response);
 
   return apiResponse("news_reader_admin_source_upsert", {
     source: data.source ? readerSourceFromLifeGraphSource(data.source) : normalized.source,
+    idempotency: {
+      matched_existing_feed_url: Boolean(existingSource),
+      requested_id: requestedId,
+      effective_id: normalized.source.id,
+      restored: Boolean(existingSource && existingSource.isEnabled === false && normalized.source.is_enabled !== false)
+    },
     remote: remote.response
   }, {
-    blockers: remote.blockers || [],
+    blockers: [...(existingSources.blockers || []), ...(remote.blockers || [])],
     provenance: [
       { type: "news_reader_admin", source: "/api/admin/sources" },
       { type: "life_graph_api", source: "/api/intel/sources" }
@@ -1238,6 +1299,30 @@ async function loadItems({ refresh = false } = {}) {
   return payload;
 }
 
+function refreshStatusPayload() {
+  return apiResponse("news_reader_refresh_status", {
+    status: refreshStatus,
+    feed_cache: feedCache.payload
+      ? {
+          fetched_at: new Date(feedCache.fetchedAt).toISOString(),
+          generated_at: feedCache.payload.generatedAt,
+          item_count: feedCache.payload.itemCount,
+          error_count: feedCache.payload.errors?.length || 0
+        }
+      : null,
+    schedule: {
+      github_actions: ".github/workflows/daily-news-import.yml",
+      cadence: "17 minutes past every third hour"
+    },
+    config: lifeGraphConfigStatus()
+  }, {
+    provenance: [
+      { type: "process_memory", source: "news-reader refresh status cache" },
+      { type: "repo_local", source: ".github/workflows/daily-news-import.yml" }
+    ]
+  });
+}
+
 async function readerSourcesPayload() {
   if (lifeGraphConfig().itemsSource !== "life_graph") {
     return { sources: loadSources(), source: "feed", errors: [] };
@@ -1328,13 +1413,26 @@ async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
 
 async function refreshReaderItemsPayload({ view = "unread" } = {}) {
   if (lifeGraphConfig().itemsSource !== "life_graph") {
-    return {
+    const payload = {
       ...(await readerItemsPayload({ refresh: true, view })),
       refresh: {
         ok: true,
         mode: "feed"
       }
     };
+
+    refreshStatus = {
+      last_attempt_at: payload.generatedAt,
+      last_success_at: payload.generatedAt,
+      ok: true,
+      mode: "feed",
+      item_count: payload.itemCount,
+      source: "api.items.refresh",
+      remote_counts: null,
+      blockers: []
+    };
+
+    return payload;
   }
 
   const importPayload = await scheduledNewsImportPayload({ refresh: true, apply: true });
@@ -1344,6 +1442,16 @@ async function refreshReaderItemsPayload({ view = "unread" } = {}) {
   }
 
   const itemsPayload = await readerItemsPayload({ refresh: false, view });
+  refreshStatus = {
+    last_attempt_at: importPayload.data?.generated_at || new Date().toISOString(),
+    last_success_at: itemsPayload.generatedAt,
+    ok: true,
+    mode: "life_graph",
+    item_count: itemsPayload.itemCount,
+    source: "api.items.refresh",
+    remote_counts: importPayload.data?.remote_counts || null,
+    blockers: []
+  };
 
   return {
     ...itemsPayload,
@@ -1552,6 +1660,11 @@ async function handle(req, res) {
 
     if (requestUrl.pathname === "/api/admin/sources/health") {
       sendJson(res, 200, await adminSourceHealthPayload());
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/refresh/status") {
+      sendJson(res, 200, refreshStatusPayload());
       return;
     }
 

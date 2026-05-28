@@ -12,10 +12,14 @@ const els = {
   relevanceStatus: document.querySelector("#relevance-status"),
   list: document.querySelector("#admin-source-list"),
   healthList: document.querySelector("#source-health-list"),
+  refreshStatusList: document.querySelector("#refresh-status-list"),
   extractionList: document.querySelector("#extraction-list"),
   reload: document.querySelector("#reload-sources"),
   checkHealth: document.querySelector("#check-health"),
+  reloadRefreshStatus: document.querySelector("#reload-refresh-status"),
+  runRefresh: document.querySelector("#run-refresh"),
   clearRelevance: document.querySelector("#clear-relevance"),
+  refreshStatus: document.querySelector("#refresh-status"),
   extractionStatus: document.querySelector("#extraction-status"),
   loadExtractions: document.querySelector("#load-extractions"),
   applyExtractions: document.querySelector("#apply-extractions")
@@ -86,6 +90,11 @@ function setRelevanceStatus(message, isError = false) {
 function setExtractionStatus(message, isError = false) {
   els.extractionStatus.textContent = message;
   els.extractionStatus.classList.toggle("error", isError);
+}
+
+function setRefreshStatus(message, isError = false) {
+  els.refreshStatus.textContent = message;
+  els.refreshStatus.classList.toggle("error", isError);
 }
 
 function loadRelevanceControls() {
@@ -215,6 +224,42 @@ function renderHealth(sources) {
   });
 }
 
+function renderRefreshStatus(data) {
+  const status = data.status || {};
+  const feedCache = data.feed_cache || {};
+  const schedule = data.schedule || {};
+  const rows = [
+    ["Last attempt", status.last_attempt_at || "Not run in this process"],
+    ["Last success", status.last_success_at || "Not recorded"],
+    ["Mode", status.mode || "Unknown"],
+    ["Items", Number.isFinite(status.item_count) ? String(status.item_count) : "0"],
+    ["Feed cache", feedCache.generated_at ? `${feedCache.item_count || 0} items at ${feedCache.generated_at}` : "Empty"],
+    ["Cadence", schedule.cadence || "Not configured"]
+  ];
+
+  els.refreshStatusList.innerHTML = "";
+  rows.forEach(([label, value]) => {
+    const li = document.createElement("li");
+    const body = document.createElement("div");
+    const title = document.createElement("strong");
+    const detail = document.createElement("p");
+
+    body.className = "admin-source-body";
+    title.textContent = label;
+    detail.textContent = value;
+    body.append(title, detail);
+    li.appendChild(body);
+    els.refreshStatusList.appendChild(li);
+  });
+
+  if (Array.isArray(status.blockers) && status.blockers.length) {
+    setRefreshStatus(status.blockers.map((blocker) => blocker.message || blocker.code).join("; "), true);
+    return;
+  }
+
+  setRefreshStatus(status.ok === false ? "Last refresh failed." : "Refresh status loaded.");
+}
+
 function renderExtractions() {
   els.extractionList.innerHTML = "";
 
@@ -300,6 +345,37 @@ async function checkHealth() {
   }
 }
 
+async function loadRefreshStatus() {
+  els.reloadRefreshStatus.disabled = true;
+  setRefreshStatus("Loading refresh status...");
+
+  try {
+    const payload = await api("/api/admin/refresh/status");
+    renderRefreshStatus(payload.data || {});
+  } catch (err) {
+    setRefreshStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.reloadRefreshStatus.disabled = false;
+  }
+}
+
+async function runRefresh() {
+  els.runRefresh.disabled = true;
+  setRefreshStatus("Running import refresh...");
+
+  try {
+    const payload = await api("/api/items/refresh?view=unread", { method: "POST" });
+    const count = payload.itemCount || payload.data?.itemCount || 0;
+
+    setRefreshStatus(`Refresh complete. ${count} unread items available.`);
+    await loadRefreshStatus();
+  } catch (err) {
+    setRefreshStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.runRefresh.disabled = false;
+  }
+}
+
 async function saveSource(event) {
   event.preventDefault();
   const submit = els.form.querySelector("button[type='submit']");
@@ -365,9 +441,12 @@ els.form.addEventListener("submit", saveSource);
 els.relevanceForm.addEventListener("submit", saveRelevance);
 els.reload.addEventListener("click", loadSources);
 els.checkHealth.addEventListener("click", checkHealth);
+els.reloadRefreshStatus.addEventListener("click", loadRefreshStatus);
+els.runRefresh.addEventListener("click", runRefresh);
 els.clearRelevance.addEventListener("click", clearRelevance);
 els.loadExtractions.addEventListener("click", loadExtractions);
 els.applyExtractions.addEventListener("click", applyExtractions);
 loadRemoteRelevanceControls();
 loadSources();
 checkHealth();
+loadRefreshStatus();

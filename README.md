@@ -12,6 +12,8 @@ annotations, and project connections.
 
 Start with [Project Intent](docs/project-intent.md), then use the [research system](docs/research/README.md), [bibliography](docs/research/bibliography.md), and [exec plans](docs/execplans/README.md) to plan implementation slices.
 
+Production operating notes live in [News Reader Production Runbook](docs/ops/production-runbook.md).
+
 ## Run
 
 ```bash
@@ -95,6 +97,10 @@ Each source needs:
 
 AP was not seeded because `https://apnews.com/index.rss` returned `401` during setup from this machine.
 
+In production, source management should happen through `/admin.html` and Life Graph. Saving a source with an existing feed
+URL updates that existing source instead of creating a duplicate. Removing a source disables it so historical article state
+is retained, and saving it again restores the source.
+
 ## Intel Graph
 
 This repo now exposes read-only normalized graph objects:
@@ -108,6 +114,7 @@ This repo now exposes read-only normalized graph objects:
 - `POST /api/life-graph/import/remote-dry-run`
 - `POST /api/life-graph/import/apply`
 - `POST /api/items/refresh`
+- `GET /api/admin/refresh/status`
 - `GET /api/life-graph/intel/sources`
 - `GET /api/life-graph/intel/works`
 - `GET /api/life-graph/intel/reader/works`
@@ -163,7 +170,7 @@ Authorization: Bearer $NEWS_READER_CRON_SECRET
 The endpoint fetches the configured RSS/Atom sources, applies the News Reader import to Life Graph, and returns a compact
 summary with local import ids and remote counts. It bypasses the browser login but requires `NEWS_READER_CRON_SECRET`.
 
-GitHub Actions runs this endpoint daily from `.github/workflows/daily-news-import.yml`. Configure these repo settings:
+GitHub Actions runs this endpoint every three hours from `.github/workflows/daily-news-import.yml`. Configure these repo settings:
 
 - GitHub Actions secret: `NEWS_READER_CRON_SECRET`
 - Optional GitHub Actions variable: `NEWS_READER_BASE_URL`, defaults to `https://news.selectproj.com`
@@ -188,4 +195,13 @@ npm run contracts
 
 ```bash
 npm run smoke
+```
+
+Production read-only smoke test:
+
+```bash
+NEWS_READER_BASE_URL=https://news.selectproj.com \
+NEWS_READER_ADMIN_USER=admin \
+NEWS_READER_ADMIN_PASSCODE=... \
+npm run smoke:production
 ```

@@ -116,6 +116,7 @@ async function main() {
   if (
     !adminPage.text.includes("Save Source") ||
     !adminPage.text.includes("Source health") ||
+    !adminPage.text.includes("Refresh status") ||
     !adminPage.text.includes("Relevance") ||
     !adminPage.text.includes("Review queue") ||
     !adminPage.text.includes("/admin.js")
@@ -169,6 +170,13 @@ async function main() {
     sourceHealthPayload.data?.sources?.[0]?.itemCount !== 2
   ) {
     throw new Error("source health endpoint did not check fixture source health");
+  }
+
+  const refreshStatus = await request("/api/admin/refresh/status");
+  const refreshStatusPayload = JSON.parse(refreshStatus.text);
+
+  if (!refreshStatusPayload.ok || refreshStatusPayload.data?.schedule?.github_actions !== ".github/workflows/daily-news-import.yml") {
+    throw new Error("refresh status endpoint did not return schedule metadata");
   }
 
   const graphSources = await request("/api/graph/sources");
@@ -351,6 +359,7 @@ async function main() {
           "fixture feed",
           "reader refresh",
           "source health",
+          "refresh status",
           "graph sources",
           "graph contracts",
           "graph works",
