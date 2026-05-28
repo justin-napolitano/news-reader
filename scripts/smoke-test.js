@@ -117,6 +117,7 @@ async function main() {
     !adminPage.text.includes("Save Source") ||
     !adminPage.text.includes("Source health") ||
     !adminPage.text.includes("Relevance") ||
+    !adminPage.text.includes("Review queue") ||
     !adminPage.text.includes("/admin.js")
   ) {
     throw new Error("admin page did not render the source manager shell");
@@ -124,7 +125,13 @@ async function main() {
 
   const reader = await request("/reader.html?url=https%3A%2F%2Fexample.com%2Fstory-one&title=Fixture&work_id=work%3Afixture-story");
 
-  if (!reader.text.includes("Open original") || !reader.text.includes("reader-save") || !reader.text.includes("reader-archive") || !reader.text.includes("/reader.js")) {
+  if (
+    !reader.text.includes("Open original") ||
+    !reader.text.includes("reader-save") ||
+    !reader.text.includes("reader-archive") ||
+    !reader.text.includes("reader-note-form") ||
+    !reader.text.includes("/reader.js")
+  ) {
     throw new Error("reader page did not render the article reader shell");
   }
 
@@ -241,6 +248,38 @@ async function main() {
     throw new Error("admin source upsert did not validate required source fields");
   }
 
+  const preferences = await fetch(`${BASE_URL}/api/life-graph/intel/reader/preferences`, {
+    headers: { cookie: sessionCookie }
+  });
+  const preferencesPayload = await preferences.json();
+
+  if (preferences.status !== 503 || preferencesPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("reader preferences endpoint should block safely when Life Graph is unconfigured");
+  }
+
+  const note = await fetch(`${BASE_URL}/api/life-graph/intel/reader/notes`, {
+    method: "POST",
+    headers: { "content-type": "application/json", cookie: sessionCookie },
+    body: JSON.stringify({ work_id: "work:fixture-story", note: "Useful." })
+  });
+  const notePayload = await note.json();
+
+  if (note.status !== 503 || notePayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing") {
+    throw new Error("reader note endpoint should block safely when Life Graph is unconfigured");
+  }
+
+  const extractionReview = await fetch(`${BASE_URL}/api/life-graph/intel/extractions/review`, {
+    headers: { cookie: sessionCookie }
+  });
+  const extractionReviewPayload = await extractionReview.json();
+
+  if (
+    extractionReview.status !== 503 ||
+    extractionReviewPayload.blockers?.[0]?.code !== "life_graph_api_base_url_missing"
+  ) {
+    throw new Error("extraction review endpoint should block safely when Life Graph is unconfigured");
+  }
+
   const lifeGraphDryRun = await request("/api/life-graph/import/dry-run", { method: "POST" });
   const lifeGraphDryRunPayload = JSON.parse(lifeGraphDryRun.text);
 
@@ -320,6 +359,9 @@ async function main() {
           "life graph status",
           "admin source remote block",
           "admin source validation",
+          "reader preferences remote block",
+          "reader note remote block",
+          "extraction review remote block",
           "life graph dry-run import",
           "life graph post-only mutation guard",
           "life graph reader state mutation guard",

@@ -14,7 +14,9 @@ const {
 } = require("./src/intel-graph");
 const { createLifeGraphDryRunImport } = require("./src/life-graph-adapter");
 const {
+  applyLifeGraphExtractions,
   applyLifeGraphRetention,
+  getLifeGraphReaderPreferences,
   intelSourceToReaderSource,
   intelWorkToReaderItem,
   lifeGraphConfig,
@@ -23,9 +25,12 @@ const {
   listLifeGraphIntelWorks,
   listLifeGraphReaderWorks,
   remoteData,
+  reviewLifeGraphExtractions,
   sendNewsReaderImport,
   setLifeGraphIntelSourceEnabled,
   upsertLifeGraphIntelSource,
+  upsertLifeGraphReaderNote,
+  upsertLifeGraphReaderPreferences,
   updateLifeGraphReaderState
 } = require("./src/life-graph-client");
 
@@ -1080,6 +1085,76 @@ async function updateReaderStatePayload({ workId, action }) {
   });
 }
 
+async function readerPreferencesPayload() {
+  const remote = await getLifeGraphReaderPreferences();
+  const data = remoteData(remote.response);
+
+  return apiResponse("life_graph_intel_reader_preferences", {
+    preferences: data.preferences || null,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/reader/preferences" }]
+  });
+}
+
+async function upsertReaderPreferencesPayload({ preferences }) {
+  const remote = await upsertLifeGraphReaderPreferences({ preferences });
+  const data = remoteData(remote.response);
+
+  return apiResponse("life_graph_intel_reader_preferences_upsert", {
+    preferences: data.preferences || null,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/reader/preferences" }]
+  });
+}
+
+async function upsertReaderNotePayload({ workId, note }) {
+  const remote = await upsertLifeGraphReaderNote({ workId, note });
+  const data = remoteData(remote.response);
+
+  return apiResponse("life_graph_intel_reader_note", {
+    note: data.note || null,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/reader/notes" }]
+  });
+}
+
+async function extractionReviewPayload({ view = "saved", limit = 20 } = {}) {
+  const remote = await reviewLifeGraphExtractions({ view, limit });
+  const data = remoteData(remote.response);
+
+  return apiResponse("life_graph_intel_extractions_review", {
+    view: data.view || view,
+    candidates: Array.isArray(data.candidates) ? data.candidates : [],
+    count: data.count || 0,
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/extractions/review" }]
+  });
+}
+
+async function extractionApplyPayload({ workIds, apply = false }) {
+  const remote = await applyLifeGraphExtractions({ workIds, apply });
+  const data = remoteData(remote.response);
+
+  return apiResponse("life_graph_intel_extractions_apply", {
+    applied: Boolean(data.applied),
+    dry_run: data.dry_run !== false,
+    count: data.count || 0,
+    extractions: Array.isArray(data.extractions) ? data.extractions : [],
+    remote: remote.response
+  }, {
+    blockers: remote.blockers || [],
+    provenance: [{ type: "life_graph_api", source: "/api/intel/extractions/apply" }]
+  });
+}
+
 async function retentionApplyPayload({ apply = false } = {}) {
   const remote = await applyLifeGraphRetention({ apply });
 
@@ -1404,6 +1479,8 @@ async function handle(req, res) {
     "/api/items/refresh",
     "/api/admin/sources/state",
     "/api/life-graph/intel/reader/state",
+    "/api/life-graph/intel/reader/notes",
+    "/api/life-graph/intel/extractions/apply",
     "/api/life-graph/intel/retention/apply"
   ]);
 
@@ -1588,6 +1665,50 @@ async function handle(req, res) {
           action: body.action || ""
         })
       );
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/reader/preferences" && req.method === "GET") {
+      const payload = await readerPreferencesPayload();
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/reader/preferences") {
+      const body = await readJsonBody(req);
+      const payload = await upsertReaderPreferencesPayload({
+        preferences: body.preferences && typeof body.preferences === "object" ? body.preferences : body
+      });
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/reader/notes") {
+      const body = await readJsonBody(req);
+      const payload = await upsertReaderNotePayload({
+        workId: body.work_id || body.workId || "",
+        note: body.note || ""
+      });
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/extractions/review") {
+      const payload = await extractionReviewPayload({
+        view: requestUrl.searchParams.get("view") || "saved",
+        limit: Number.parseInt(requestUrl.searchParams.get("limit") || "20", 10)
+      });
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/life-graph/intel/extractions/apply") {
+      const body = await readJsonBody(req);
+      const payload = await extractionApplyPayload({
+        workIds: Array.isArray(body.work_ids) ? body.work_ids : [],
+        apply: Boolean(body.apply)
+      });
+      sendJson(res, payload.ok ? 200 : blockerHttpStatus(payload.blockers), payload);
       return;
     }
 

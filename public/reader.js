@@ -18,6 +18,9 @@ const els = {
   body: document.querySelector("#reader-body"),
   save: document.querySelector("#reader-save"),
   archive: document.querySelector("#reader-archive"),
+  noteForm: document.querySelector("#reader-note-form"),
+  note: document.querySelector("#reader-note"),
+  noteSave: document.querySelector("#reader-note-save"),
   status: document.querySelector("#reader-action-status")
 };
 
@@ -172,6 +175,53 @@ async function updateReaderState(action) {
   }
 }
 
+async function saveReaderNote(event) {
+  event.preventDefault();
+
+  if (!workId) {
+    setActionStatus("Notes require a graph-backed article.", true);
+    return;
+  }
+
+  const note = els.note.value.trim();
+
+  if (!note) {
+    setActionStatus("Write a note before saving.", true);
+    return;
+  }
+
+  els.noteSave.disabled = true;
+  setActionStatus("Saving note...");
+
+  try {
+    const response = await fetch("/api/life-graph/intel/reader/notes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ work_id: workId, note })
+    });
+    const payload = await response.json();
+
+    if (!response.ok || !payload.ok) {
+      const blocker = payload.blockers?.[0];
+      throw new Error(blocker?.message || payload.error || "Unable to save note.");
+    }
+
+    setActionStatus("Note saved.");
+  } catch (err) {
+    setActionStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.noteSave.disabled = false;
+  }
+}
+
+function renderNoteForm() {
+  const canUpdateState = Boolean(workId);
+
+  els.noteForm.hidden = !canUpdateState;
+  els.note.disabled = !canUpdateState;
+  els.noteSave.disabled = !canUpdateState;
+}
+
 function renderParagraphs(text) {
   const paragraphs = text
     .split(/\n{2,}/)
@@ -201,6 +251,7 @@ async function loadReader() {
   els.title.textContent = fallbackTitle;
   els.source.textContent = fallbackSource || "Reader";
   renderReaderActions();
+  renderNoteForm();
 
   if (!articleUrl) {
     els.link.hidden = true;
@@ -227,5 +278,6 @@ async function loadReader() {
 
 els.save.addEventListener("click", () => updateReaderState(readerState.isSaved ? "unsave" : "save"));
 els.archive.addEventListener("click", () => updateReaderState("dismiss"));
+els.noteForm.addEventListener("submit", saveReaderNote);
 
 loadReader();

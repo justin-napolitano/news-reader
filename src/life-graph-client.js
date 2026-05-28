@@ -237,6 +237,64 @@ async function updateLifeGraphReaderState({ workId, action, actorId = "user:defa
   });
 }
 
+async function getLifeGraphReaderPreferences({ actorId = "user:default", env = process.env } = {}) {
+  const params = new URLSearchParams({ actor_id: actorId });
+
+  return callLifeGraph(`/api/intel/reader/preferences?${params.toString()}`, {
+    method: "GET",
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function upsertLifeGraphReaderPreferences({ preferences, actorId = "user:default", env = process.env }) {
+  return callLifeGraph("/api/intel/reader/preferences", {
+    method: "POST",
+    body: {
+      actor_id: actorId,
+      preferences
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function upsertLifeGraphReaderNote({ workId, note, actorId = "user:default", env = process.env }) {
+  return callLifeGraph("/api/intel/reader/notes", {
+    method: "POST",
+    body: {
+      actor_id: actorId,
+      work_id: workId,
+      note
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function reviewLifeGraphExtractions({ view = "saved", actorId = "user:default", limit = 20, env = process.env } = {}) {
+  const params = new URLSearchParams({ view, actor_id: actorId, limit: String(limit) });
+
+  return callLifeGraph(`/api/intel/extractions/review?${params.toString()}`, {
+    method: "GET",
+    requireWriteToken: true,
+    env
+  });
+}
+
+async function applyLifeGraphExtractions({ workIds, apply = false, actorId = "user:default", env = process.env }) {
+  return callLifeGraph("/api/intel/extractions/apply", {
+    method: "POST",
+    body: {
+      actor_id: actorId,
+      work_ids: workIds,
+      apply
+    },
+    requireWriteToken: true,
+    env
+  });
+}
+
 async function applyLifeGraphRetention({ apply = false, actorId = "user:default", env = process.env } = {}) {
   return callLifeGraph("/api/intel/retention/apply", {
     method: "POST",
@@ -280,6 +338,8 @@ module.exports = {
   intelSourceToReaderSource,
   intelWorkToReaderItem,
   applyLifeGraphRetention,
+  applyLifeGraphExtractions,
+  getLifeGraphReaderPreferences,
   lifeGraphConfig,
   lifeGraphConfigStatus,
   lifeGraphConfigured,
@@ -287,8 +347,11 @@ module.exports = {
   listLifeGraphIntelWorks,
   listLifeGraphReaderWorks,
   remoteData,
+  reviewLifeGraphExtractions,
   sendNewsReaderImport,
   setLifeGraphIntelSourceEnabled,
   upsertLifeGraphIntelSource,
+  upsertLifeGraphReaderNote,
+  upsertLifeGraphReaderPreferences,
   updateLifeGraphReaderState
 };

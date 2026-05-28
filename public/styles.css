@@ -333,6 +333,37 @@ h2 {
   font-weight: 700;
 }
 
+.reader-note-form {
+  display: grid;
+  gap: 10px;
+  max-width: 680px;
+  margin-top: 20px;
+}
+
+.reader-note-form label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.reader-note-form textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 11px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.reader-note-form button {
+  justify-self: start;
+}
+
 .reader-head a {
   display: inline-flex;
   margin-top: 18px;
