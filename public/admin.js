@@ -1,7 +1,8 @@
 const RELEVANCE_KEY = "news-reader:relevance-controls";
 
 const state = {
-  sources: []
+  sources: [],
+  extractionCandidates: []
 };
 
 const els = {
@@ -11,9 +12,13 @@ const els = {
   relevanceStatus: document.querySelector("#relevance-status"),
   list: document.querySelector("#admin-source-list"),
   healthList: document.querySelector("#source-health-list"),
+  extractionList: document.querySelector("#extraction-list"),
   reload: document.querySelector("#reload-sources"),
   checkHealth: document.querySelector("#check-health"),
-  clearRelevance: document.querySelector("#clear-relevance")
+  clearRelevance: document.querySelector("#clear-relevance"),
+  extractionStatus: document.querySelector("#extraction-status"),
+  loadExtractions: document.querySelector("#load-extractions"),
+  applyExtractions: document.querySelector("#apply-extractions")
 };
 
 function listFromField(value) {
@@ -78,6 +83,11 @@ function setRelevanceStatus(message, isError = false) {
   els.relevanceStatus.classList.toggle("error", isError);
 }
 
+function setExtractionStatus(message, isError = false) {
+  els.extractionStatus.textContent = message;
+  els.extractionStatus.classList.toggle("error", isError);
+}
+
 function loadRelevanceControls() {
   try {
     return JSON.parse(window.localStorage.getItem(RELEVANCE_KEY) || "{}");
@@ -96,6 +106,25 @@ function fillRelevanceForm() {
   els.relevanceForm.elements.priorityTerms.value = (controls.priorityTerms || []).join(", ");
   els.relevanceForm.elements.hiddenTerms.value = (controls.hiddenTerms || []).join(", ");
   els.relevanceForm.elements.prioritySources.value = (controls.prioritySources || []).join(", ");
+}
+
+async function loadRemoteRelevanceControls() {
+  try {
+    const payload = await api("/api/life-graph/intel/reader/preferences");
+    const preferences = payload.data?.preferences;
+
+    if (preferences) {
+      saveRelevanceControls({
+        priorityTerms: preferences.priority_terms || [],
+        hiddenTerms: preferences.hidden_terms || [],
+        prioritySources: preferences.priority_sources || []
+      });
+      fillRelevanceForm();
+      setRelevanceStatus("Controls loaded from Life Graph.");
+    }
+  } catch (_err) {
+    fillRelevanceForm();
+  }
 }
 
 function relevanceFromForm() {
@@ -186,6 +215,76 @@ function renderHealth(sources) {
   });
 }
 
+function renderExtractions() {
+  els.extractionList.innerHTML = "";
+
+  state.extractionCandidates.forEach((candidate) => {
+    const li = document.createElement("li");
+    const body = document.createElement("div");
+    const title = document.createElement("strong");
+    const meta = document.createElement("span");
+    const details = document.createElement("p");
+    const extraction = candidate.extraction || {};
+    const topicNames = (extraction.topics || []).map((topic) => topic.name).slice(0, 5);
+    const entityNames = (extraction.entities || []).map((entity) => entity.name).slice(0, 5);
+
+    body.className = "admin-source-body";
+    title.textContent = candidate.work?.title || candidate.work?.id || "Untitled";
+    meta.textContent = [
+      `${topicNames.length} topics`,
+      `${entityNames.length} entities`,
+      `score ${Math.round((extraction.relevance_score || 0) * 100)}`
+    ].join(" / ");
+    details.textContent = [
+      topicNames.length ? `Topics: ${topicNames.join(", ")}` : "",
+      entityNames.length ? `Entities: ${entityNames.join(", ")}` : ""
+    ].filter(Boolean).join(" | ");
+    body.append(title, meta, details);
+    li.appendChild(body);
+    els.extractionList.appendChild(li);
+  });
+}
+
+async function loadExtractions() {
+  els.loadExtractions.disabled = true;
+  setExtractionStatus("Loading extraction candidates...");
+
+  try {
+    const payload = await api("/api/life-graph/intel/extractions/review?view=saved&limit=20");
+    state.extractionCandidates = payload.data?.candidates || [];
+    renderExtractions();
+    setExtractionStatus(`${state.extractionCandidates.length} saved articles ready for review.`);
+  } catch (err) {
+    setExtractionStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.loadExtractions.disabled = false;
+  }
+}
+
+async function applyExtractions() {
+  const workIds = state.extractionCandidates.map((candidate) => candidate.work?.id).filter(Boolean);
+
+  if (!workIds.length) {
+    setExtractionStatus("Load saved-article candidates before applying.", true);
+    return;
+  }
+
+  els.applyExtractions.disabled = true;
+  setExtractionStatus("Applying deterministic extraction...");
+
+  try {
+    const payload = await api("/api/life-graph/intel/extractions/apply", {
+      method: "POST",
+      body: JSON.stringify({ work_ids: workIds, apply: true })
+    });
+    setExtractionStatus(`Applied extraction for ${payload.data?.count || 0} articles.`);
+  } catch (err) {
+    setExtractionStatus(err instanceof Error ? err.message : String(err), true);
+  } finally {
+    els.applyExtractions.disabled = false;
+  }
+}
+
 async function checkHealth() {
   els.checkHealth.disabled = true;
   setStatus("Checking source health...");
@@ -242,8 +341,15 @@ function saveRelevance(event) {
   event.preventDefault();
 
   try {
-    saveRelevanceControls(relevanceFromForm());
-    setRelevanceStatus("Controls saved.");
+    const controls = relevanceFromForm();
+
+    saveRelevanceControls(controls);
+    api("/api/life-graph/intel/reader/preferences", {
+      method: "POST",
+      body: JSON.stringify({ preferences: controls })
+    })
+      .then(() => setRelevanceStatus("Controls saved to Life Graph."))
+      .catch(() => setRelevanceStatus("Controls saved in this browser; Life Graph is unavailable."));
   } catch (err) {
     setRelevanceStatus(err instanceof Error ? err.message : String(err), true);
   }
@@ -260,6 +366,8 @@ els.relevanceForm.addEventListener("submit", saveRelevance);
 els.reload.addEventListener("click", loadSources);
 els.checkHealth.addEventListener("click", checkHealth);
 els.clearRelevance.addEventListener("click", clearRelevance);
-fillRelevanceForm();
+els.loadExtractions.addEventListener("click", loadExtractions);
+els.applyExtractions.addEventListener("click", applyExtractions);
+loadRemoteRelevanceControls();
 loadSources();
 checkHealth();

@@ -88,6 +88,28 @@ function loadRelevanceControls() {
   }
 }
 
+async function loadRemoteRelevanceControls() {
+  try {
+    const response = await fetch("/api/life-graph/intel/reader/preferences");
+    const payload = await response.json();
+    const preferences = payload.data?.preferences;
+
+    if (response.ok && payload.ok !== false && preferences) {
+      window.localStorage.setItem(
+        RELEVANCE_KEY,
+        JSON.stringify({
+          version: 1,
+          priorityTerms: preferences.priority_terms || [],
+          hiddenTerms: preferences.hidden_terms || [],
+          prioritySources: preferences.priority_sources || []
+        })
+      );
+    }
+  } catch (_err) {
+    // Browser-local relevance remains available when Life Graph is offline.
+  }
+}
+
 function normalizeTerms(value) {
   return Array.isArray(value)
     ? value.map((term) => String(term).trim().toLowerCase()).filter(Boolean)
@@ -431,5 +453,7 @@ window.addEventListener("pagehide", saveListContext);
 
 renderViews();
 syncListUrl();
-loadSources();
-loadArticles();
+loadRemoteRelevanceControls().finally(() => {
+  loadSources();
+  loadArticles();
+});

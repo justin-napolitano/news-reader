@@ -110,6 +110,21 @@
           </div>
           <p id="relevance-status" class="admin-status" aria-live="polite">Controls are stored in this browser.</p>
         </form>
+
+        <section class="admin-panel source-manager">
+          <div class="source-manager-head">
+            <div>
+              <p class="panel-label">Extraction</p>
+              <h2>Review queue</h2>
+            </div>
+            <div class="admin-inline-actions">
+              <button id="load-extractions" type="button">Load</button>
+              <button id="apply-extractions" type="button">Apply</button>
+            </div>
+          </div>
+          <p id="extraction-status" class="admin-status" aria-live="polite">Saved articles can be reviewed before graph extraction.</p>
+          <ol id="extraction-list" class="admin-source-list compact-list"></ol>
+        </section>
       </section>
     </main>
 
