@@ -83,6 +83,21 @@
           <ol id="source-health-list" class="admin-source-list compact-list"></ol>
         </section>
 
+        <section class="admin-panel source-manager">
+          <div class="source-manager-head">
+            <div>
+              <p class="panel-label">Import</p>
+              <h2>Refresh status</h2>
+            </div>
+            <div class="admin-inline-actions">
+              <button id="reload-refresh-status" type="button">Reload</button>
+              <button id="run-refresh" type="button">Run</button>
+            </div>
+          </div>
+          <p id="refresh-status" class="admin-status" aria-live="polite">Refresh status has not loaded.</p>
+          <ol id="refresh-status-list" class="admin-source-list compact-list"></ol>
+        </section>
+
         <form id="relevance-form" class="admin-panel">
           <div>
             <p class="panel-label">Reader</p>
