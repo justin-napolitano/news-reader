@@ -136,6 +136,16 @@ async function main() {
     throw new Error("reader page did not render the article reader shell");
   }
 
+  const review = await request("/review.html");
+
+  if (
+    !review.text.includes("review-card") ||
+    !review.text.includes("review-save") ||
+    !review.text.includes("/review.js")
+  ) {
+    throw new Error("review page did not render the mobile review shell");
+  }
+
   const sources = await request("/api/sources");
   const sourcePayload = JSON.parse(sources.text);
 
@@ -175,7 +185,11 @@ async function main() {
   const refreshStatus = await request("/api/admin/refresh/status");
   const refreshStatusPayload = JSON.parse(refreshStatus.text);
 
-  if (!refreshStatusPayload.ok || refreshStatusPayload.data?.schedule?.github_actions !== ".github/workflows/daily-news-import.yml") {
+  if (
+    !refreshStatusPayload.ok ||
+    refreshStatusPayload.data?.schedule?.github_actions !== ".github/workflows/daily-news-import.yml" ||
+    !refreshStatusPayload.data?.durable_status
+  ) {
     throw new Error("refresh status endpoint did not return schedule metadata");
   }
 
@@ -355,6 +369,7 @@ async function main() {
           "login form",
           "admin source page",
           "reader page",
+          "review page",
           "sources",
           "fixture feed",
           "reader refresh",

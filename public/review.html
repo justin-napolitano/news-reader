@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#047857" />
+    <title>Review / News Reader</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="review-shell">
+      <header class="review-topbar">
+        <a class="back-link" href="/">Feed</a>
+        <div class="review-progress">
+          <span id="review-position">0 / 0</span>
+          <span id="review-status" aria-live="polite">Loading unread articles...</span>
+        </div>
+      </header>
+
+      <section class="review-stage" aria-label="Article review deck">
+        <article id="review-card" class="review-card" tabindex="0" aria-live="polite">
+          <div class="swipe-hint save">Save</div>
+          <div class="swipe-hint archive">Archive</div>
+          <p id="review-source" class="article-source">News Reader</p>
+          <h1 id="review-title">Loading...</h1>
+          <p id="review-excerpt" class="review-excerpt">Fetching unread articles.</p>
+          <div id="review-chunk" class="review-chunk" hidden></div>
+          <div class="review-card-footer">
+            <span id="review-chunk-count">Excerpt</span>
+            <a id="review-open" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+          </div>
+        </article>
+      </section>
+
+      <nav class="review-actions" aria-label="Review actions">
+        <button id="review-archive" type="button">Archive</button>
+        <button id="review-read" type="button">Read chunk</button>
+        <button id="review-save" type="button">Save</button>
+      </nav>
+      <button id="review-undo" class="review-undo" type="button" disabled>Undo last</button>
+    </main>
+
+    <script src="/review.js"></script>
+  </body>
+</html>

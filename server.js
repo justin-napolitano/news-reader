@@ -16,6 +16,7 @@ const { createLifeGraphDryRunImport } = require("./src/life-graph-adapter");
 const {
   applyLifeGraphExtractions,
   applyLifeGraphRetention,
+  getLifeGraphLatestNewsReaderImport,
   getLifeGraphReaderPreferences,
   intelSourceToReaderSource,
   intelWorkToReaderItem,
@@ -1299,9 +1300,22 @@ async function loadItems({ refresh = false } = {}) {
   return payload;
 }
 
-function refreshStatusPayload() {
+async function refreshStatusPayload() {
+  const durable = lifeGraphConfig().itemsSource === "life_graph"
+    ? await getLifeGraphLatestNewsReaderImport()
+    : { ok: false, blockers: [] };
+  const durableData = remoteData(durable.response);
+  const importRun = durable.ok ? durableData.import_run : null;
+
   return apiResponse("news_reader_refresh_status", {
     status: refreshStatus,
+    durable_status: {
+      source: "life_graph",
+      configured: lifeGraphConfigStatus().configured,
+      ok: durable.ok,
+      import_run: importRun || null,
+      blockers: durable.blockers || []
+    },
     feed_cache: feedCache.payload
       ? {
           fetched_at: new Date(feedCache.fetchedAt).toISOString(),
@@ -1318,6 +1332,7 @@ function refreshStatusPayload() {
   }, {
     provenance: [
       { type: "process_memory", source: "news-reader refresh status cache" },
+      { type: "life_graph_api", source: "/api/intel/imports/news-reader/latest" },
       { type: "repo_local", source: ".github/workflows/daily-news-import.yml" }
     ]
   });
@@ -1615,6 +1630,11 @@ async function handle(req, res) {
       return;
     }
 
+    if (requestUrl.pathname === "/review") {
+      redirect(res, "/review.html");
+      return;
+    }
+
     if (requestUrl.pathname === "/api/cron/news-import") {
       if (!["GET", "POST"].includes(req.method)) {
         sendJson(res, 405, { error: "Method not allowed" });
@@ -1664,7 +1684,7 @@ async function handle(req, res) {
     }
 
     if (requestUrl.pathname === "/api/admin/refresh/status") {
-      sendJson(res, 200, refreshStatusPayload());
+      sendJson(res, 200, await refreshStatusPayload());
       return;
     }
 

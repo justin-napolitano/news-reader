@@ -72,4 +72,6 @@ Production smoke with an intentional refresh:
 NEWS_READER_SMOKE_REFRESH=1 npm run smoke:production
 ```
 
-The admin page also exposes a refresh status panel with the latest in-process refresh attempt, source health checks, feed cache metadata, and the configured scheduled-import cadence.
+The admin page also exposes a refresh status panel with durable Life Graph import status from
+`/api/intel/imports/news-reader/latest`, the latest in-process refresh attempt, source health checks, feed cache metadata,
+and the configured scheduled-import cadence.
