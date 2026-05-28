@@ -71,6 +71,45 @@
           </div>
           <ol id="admin-source-list" class="admin-source-list"></ol>
         </section>
+
+        <section class="admin-panel source-manager">
+          <div class="source-manager-head">
+            <div>
+              <p class="panel-label">Checks</p>
+              <h2>Source health</h2>
+            </div>
+            <button id="check-health" type="button">Check</button>
+          </div>
+          <ol id="source-health-list" class="admin-source-list compact-list"></ol>
+        </section>
+
+        <form id="relevance-form" class="admin-panel">
+          <div>
+            <p class="panel-label">Reader</p>
+            <h2>Relevance</h2>
+          </div>
+
+          <label>
+            Priority terms
+            <input name="priorityTerms" autocomplete="off" placeholder="ai, vercel, courts" />
+          </label>
+
+          <label>
+            Hidden terms
+            <input name="hiddenTerms" autocomplete="off" placeholder="sports betting, celebrity" />
+          </label>
+
+          <label>
+            Priority sources
+            <input name="prioritySources" autocomplete="off" placeholder="lawfare, cisa-advisories" />
+          </label>
+
+          <div class="admin-inline-actions">
+            <button type="submit">Save Controls</button>
+            <button id="clear-relevance" type="button">Clear</button>
+          </div>
+          <p id="relevance-status" class="admin-status" aria-live="polite">Controls are stored in this browser.</p>
+        </form>
       </section>
     </main>
 
