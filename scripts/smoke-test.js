@@ -65,15 +65,20 @@ async function main() {
     throw new Error("public home page did not render the read-only reader shell");
   }
 
-  const publicCurrentArticle = await request("/api/public/current-article", { auth: false });
-  const publicCurrentPayload = JSON.parse(publicCurrentArticle.text);
+  const publicArticles = await request("/api/public/articles", { auth: false });
+  const publicCurrentPayload = JSON.parse(publicArticles.text);
 
-  if (!publicCurrentPayload.ok || publicCurrentPayload.data?.item?.title !== "Fixture story one") {
-    throw new Error("public current article endpoint did not expose the fixture reader item");
+  if (
+    !publicCurrentPayload.ok ||
+    publicCurrentPayload.data?.item?.title !== "Fixture story one" ||
+    publicCurrentPayload.data?.count !== 2 ||
+    publicCurrentPayload.data?.sources?.[0]?.name !== "Fixture News"
+  ) {
+    throw new Error("public articles endpoint did not expose the fixture reader graph");
   }
 
-  if (publicCurrentArticle.text.includes("readerState") || publicCurrentArticle.text.includes("work_id")) {
-    throw new Error("public current article endpoint leaked private reader state");
+  if (publicArticles.text.includes("readerState") || publicArticles.text.includes("work_id")) {
+    throw new Error("public articles endpoint leaked private reader state");
   }
 
   const guardedItems = await fetch(`${BASE_URL}/api/items`);
@@ -375,7 +380,7 @@ async function main() {
         ok: true,
         checked: [
           "home",
-          "public read-only article",
+          "public read-only article graph",
           "login gate",
           "cron auth gate",
           "login form",

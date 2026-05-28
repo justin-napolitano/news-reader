@@ -1485,6 +1485,7 @@ function publicReaderItem(item) {
   }
 
   return {
+    sourceKey: publicSourceKey(item),
     source: item.source || "",
     section: item.section || "",
     title: item.title || "Untitled",
@@ -1494,16 +1495,47 @@ function publicReaderItem(item) {
   };
 }
 
-async function publicCurrentArticlePayload() {
-  const payload = await readerItemsPayload({ refresh: false, view: "unread" });
-  const items = Array.isArray(payload.items) ? payload.items : [];
+function publicSourceKey(item) {
+  return [item?.source, item?.section]
+    .filter(Boolean)
+    .join("-")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "source";
+}
 
-  return apiResponse("public.current_article", {
+function publicSources(items) {
+  const sources = new Map();
+
+  items.forEach((item) => {
+    const key = item.sourceKey || "source";
+    const current = sources.get(key) || {
+      id: key,
+      name: item.source || "Source",
+      section: item.section || "",
+      count: 0
+    };
+
+    current.count += 1;
+    sources.set(key, current);
+  });
+
+  return [...sources.values()].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function publicArticlesPayload() {
+  const payload = await readerItemsPayload({ refresh: false, view: "unread" });
+  const items = (Array.isArray(payload.items) ? payload.items : []).map(publicReaderItem).filter(Boolean);
+
+  return apiResponse("public.articles", {
     generatedAt: payload.generatedAt || new Date().toISOString(),
     source: payload.source || payload.view || "reader",
     view: payload.view || "unread",
     errors: payload.errors || [],
-    item: publicReaderItem(items[0])
+    sources: publicSources(items),
+    items,
+    count: items.length,
+    item: items[0] || null
   });
 }
 
@@ -1652,13 +1684,13 @@ async function handle(req, res) {
       return;
     }
 
-    if (requestUrl.pathname === "/api/public/current-article") {
+    if (requestUrl.pathname === "/api/public/articles" || requestUrl.pathname === "/api/public/current-article") {
       if (req.method !== "GET") {
         sendJson(res, 405, { error: "Method not allowed" });
         return;
       }
 
-      sendJson(res, 200, await publicCurrentArticlePayload());
+      sendJson(res, 200, await publicArticlesPayload());
       return;
     }
 

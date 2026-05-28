@@ -1,9 +1,14 @@
+const state = {
+  articles: [],
+  sources: [],
+  activeSource: "all"
+};
+
 const els = {
-  source: document.querySelector("#public-source"),
-  title: document.querySelector("#public-title"),
-  meta: document.querySelector("#public-meta"),
-  body: document.querySelector("#public-body"),
-  link: document.querySelector("#public-link")
+  sourceStrip: document.querySelector("#public-source-strip"),
+  status: document.querySelector("#public-status"),
+  count: document.querySelector("#public-count"),
+  list: document.querySelector("#public-article-list")
 };
 
 function formatDate(value) {
@@ -19,64 +24,105 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function renderMessage(message, isError = false) {
-  els.body.innerHTML = "";
-  const p = document.createElement("p");
+function filteredArticles() {
+  if (state.activeSource === "all") {
+    return state.articles;
+  }
 
-  p.textContent = message;
-  p.className = isError ? "error" : "";
-  els.body.appendChild(p);
+  return state.articles.filter((article) => article.sourceKey === state.activeSource);
 }
 
-function renderExcerpt(value) {
-  const text = String(value || "").trim();
+function renderSources() {
+  const sources = [
+    { id: "all", name: "All", count: state.articles.length },
+    ...state.sources
+  ];
 
-  if (!text) {
-    renderMessage("No feed summary is available. Open the original source to read more.");
+  els.sourceStrip.innerHTML = "";
+  sources.forEach((source) => {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = `source-filter${state.activeSource === source.id ? " is-active" : ""}`;
+    button.textContent = `${source.name}${source.count ? ` ${source.count}` : ""}`;
+    button.addEventListener("click", () => {
+      state.activeSource = source.id;
+      renderSources();
+      renderArticles();
+    });
+    els.sourceStrip.appendChild(button);
+  });
+}
+
+function renderArticles() {
+  const articles = filteredArticles();
+
+  els.count.textContent = `${articles.length} item${articles.length === 1 ? "" : "s"}`;
+  els.list.innerHTML = "";
+
+  if (!articles.length) {
+    const li = document.createElement("li");
+    const p = document.createElement("p");
+
+    p.className = "public-empty-state";
+    p.textContent = "No public reader items are available for this source.";
+    li.appendChild(p);
+    els.list.appendChild(li);
     return;
   }
 
-  els.body.innerHTML = "";
-  const p = document.createElement("p");
+  articles.forEach((article) => {
+    const li = document.createElement("li");
+    const link = document.createElement("a");
+    const meta = document.createElement("div");
+    const title = document.createElement("span");
+    const excerpt = document.createElement("p");
 
-  p.textContent = text;
-  els.body.appendChild(p);
+    link.href = article.url || "#";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "article-card";
+    meta.className = "article-source";
+    meta.textContent = [article.source, article.section, formatDate(article.publishedAt)]
+      .filter(Boolean)
+      .join(" / ");
+    title.className = "article-title";
+    title.textContent = article.title || "Untitled";
+    excerpt.className = "article-excerpt";
+    excerpt.textContent = article.excerpt || "No feed summary available.";
+    link.append(meta, title, excerpt);
+    li.appendChild(link);
+    els.list.appendChild(li);
+  });
 }
 
-async function loadCurrentArticle() {
+async function loadPublicArticles() {
+  els.status.classList.remove("error");
+  els.status.textContent = "Loading reader graph...";
+
   try {
-    const response = await fetch("/api/public/current-article");
+    const response = await fetch("/api/public/articles");
     const payload = await response.json();
     const data = payload.data || {};
-    const item = data.item;
 
     if (!response.ok || !payload.ok) {
       const blocker = payload.blockers?.[0];
-      throw new Error(blocker?.message || payload.error || "Unable to load the current article.");
+      throw new Error(blocker?.message || payload.error || "Unable to load the public reader graph.");
     }
 
-    if (!item) {
-      els.source.textContent = "Reader";
-      els.title.textContent = "No current article";
-      els.meta.textContent = "";
-      els.link.hidden = true;
-      renderMessage("The reader does not have a public item available right now.");
-      return;
-    }
-
-    els.source.textContent = [item.source, item.section].filter(Boolean).join(" / ") || "Reader";
-    els.title.textContent = item.title || "Untitled";
-    els.meta.textContent = [formatDate(item.publishedAt), data.view].filter(Boolean).join(" / ");
-    els.link.href = item.url;
-    els.link.hidden = !item.url;
-    renderExcerpt(item.excerpt);
+    state.articles = Array.isArray(data.items) ? data.items : [];
+    state.sources = Array.isArray(data.sources) ? data.sources : [];
+    els.status.textContent = data.errors?.length
+      ? `${data.errors.length} source issue${data.errors.length === 1 ? "" : "s"}`
+      : `Updated ${formatDate(data.generatedAt)}`;
+    renderSources();
+    renderArticles();
   } catch (err) {
-    els.source.textContent = "Reader";
-    els.title.textContent = "Reader unavailable";
-    els.meta.textContent = "";
-    els.link.hidden = true;
-    renderMessage(err instanceof Error ? err.message : String(err), true);
+    els.status.textContent = err instanceof Error ? err.message : String(err);
+    els.status.classList.add("error");
+    renderSources();
+    renderArticles();
   }
 }
 
-loadCurrentArticle();
+loadPublicArticles();

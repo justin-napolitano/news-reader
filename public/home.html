@@ -17,21 +17,16 @@
         <a class="admin-link" href="/login?next=%2Findex.html">Login</a>
       </header>
 
-      <article class="reader-panel public-article-panel" aria-live="polite">
-        <div class="reader-content">
-          <div class="reader-head">
-            <p class="eyebrow" id="public-source">Reader</p>
-            <h2 id="public-title">Loading current article...</h2>
-            <p id="public-meta" class="public-article-meta"></p>
-          </div>
-          <div id="public-body" class="reader-body public-reader-body">
-            <p>Loading the current reader item.</p>
-          </div>
-          <p class="public-original-link">
-            <a id="public-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
-          </p>
-        </div>
-      </article>
+      <section class="public-reader-intro">
+        <p id="public-status">Loading reader graph...</p>
+        <p id="public-count"></p>
+      </section>
+
+      <section class="source-strip public-source-strip" id="public-source-strip" aria-label="Sources"></section>
+
+      <section class="feed-page public-feed-page" aria-label="Public articles">
+        <ol id="public-article-list" class="article-list"></ol>
+      </section>
     </main>
 
     <script src="/public-home.js"></script>
