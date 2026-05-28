@@ -223,6 +223,14 @@ async function listLifeGraphReaderWorks({ view = "unread", sourceId = "", limit 
   });
 }
 
+async function getLifeGraphLatestNewsReaderImport({ env = process.env } = {}) {
+  return callLifeGraph("/api/intel/imports/news-reader/latest", {
+    method: "GET",
+    requireWriteToken: true,
+    env
+  });
+}
+
 async function updateLifeGraphReaderState({ workId, action, actorId = "user:default", payload = {}, env = process.env }) {
   return callLifeGraph("/api/intel/reader/state", {
     method: "POST",
@@ -340,6 +348,7 @@ module.exports = {
   applyLifeGraphRetention,
   applyLifeGraphExtractions,
   getLifeGraphReaderPreferences,
+  getLifeGraphLatestNewsReaderImport,
   lifeGraphConfig,
   lifeGraphConfigStatus,
   lifeGraphConfigured,

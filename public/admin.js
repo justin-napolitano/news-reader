@@ -226,9 +226,14 @@ function renderHealth(sources) {
 
 function renderRefreshStatus(data) {
   const status = data.status || {};
+  const durable = data.durable_status || {};
+  const importRun = durable.import_run || {};
   const feedCache = data.feed_cache || {};
   const schedule = data.schedule || {};
   const rows = [
+    ["Durable import", importRun.id ? `${importRun.status || "unknown"} / ${importRun.id}` : "No Life Graph import run recorded"],
+    ["Durable finished", importRun.finished_at || importRun.updated_at || "Not recorded"],
+    ["Durable counts", importRun.counts ? Object.entries(importRun.counts).map(([key, value]) => `${key}: ${value}`).join(" / ") : "None"],
     ["Last attempt", status.last_attempt_at || "Not run in this process"],
     ["Last success", status.last_success_at || "Not recorded"],
     ["Mode", status.mode || "Unknown"],
@@ -254,6 +259,11 @@ function renderRefreshStatus(data) {
 
   if (Array.isArray(status.blockers) && status.blockers.length) {
     setRefreshStatus(status.blockers.map((blocker) => blocker.message || blocker.code).join("; "), true);
+    return;
+  }
+
+  if (Array.isArray(durable.blockers) && durable.blockers.length) {
+    setRefreshStatus(`Life Graph status unavailable: ${durable.blockers.map((blocker) => blocker.message || blocker.code).join("; ")}`, true);
     return;
   }
 

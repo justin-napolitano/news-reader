@@ -141,6 +141,10 @@ NEWS_READER_ITEMS_SOURCE=life_graph
 The reader UI defaults to feed mode. Set `NEWS_READER_ITEMS_SOURCE=life_graph` to read article cards from
 `jnap-life-graph` with feed fallback for local development.
 
+Use `/review` for mobile triage. The review deck reads the unread inbox, supports swipe-right save, swipe-left archive,
+paragraph-by-paragraph on-demand reading, keyboard controls, and one-step undo. It uses the same reader-state API as the
+standard list reader.
+
 With the local reader server running:
 
 ```bash

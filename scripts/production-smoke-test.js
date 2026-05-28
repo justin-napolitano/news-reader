@@ -82,6 +82,10 @@ async function main() {
 
   assert(admin.response.status === 200 && admin.text.includes("Refresh status"), "admin page did not render refresh tools");
 
+  const review = await request("/review.html");
+
+  assert(review.response.status === 200 && review.text.includes("review-card"), "review page did not render");
+
   const sources = await requestJson("/api/sources");
 
   assert(sources.response.status === 200 && Array.isArray(sources.payload.sources), "sources endpoint failed");
@@ -110,7 +114,7 @@ async function main() {
       {
         ok: true,
         base_url: BASE_URL,
-        checked: ["health", "auth", "home", "admin", "sources", "items", "refresh_status", "source_health"],
+        checked: ["health", "auth", "home", "admin", "review", "sources", "items", "refresh_status", "source_health"],
         source_count: sources.payload.sources.length,
         unread_count: items.payload.items.length,
         refresh_run: Boolean(refresh)
