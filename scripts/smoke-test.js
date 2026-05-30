@@ -147,6 +147,7 @@ async function main() {
     !reader.text.includes("reader-save") ||
     !reader.text.includes("reader-archive") ||
     !reader.text.includes("reader-note-form") ||
+    !reader.text.includes("reader-progress-bar") ||
     !reader.text.includes("/reader.js")
   ) {
     throw new Error("reader page did not render the article reader shell");

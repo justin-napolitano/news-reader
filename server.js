@@ -1265,11 +1265,14 @@ async function lifeGraphReaderWorksPayload({ view = "unread", sourceId = "", lim
   });
 }
 
-async function updateReaderStatePayload({ workId, action }) {
+async function updateReaderStatePayload({ workId, action, payload = {} }) {
   const remote = await updateLifeGraphReaderState({
     workId,
     action,
-    payload: { client: "news-reader" }
+    payload: {
+      client: "news-reader",
+      ...(payload && typeof payload === "object" ? payload : {})
+    }
   });
 
   return apiResponse("life_graph_intel_reader_state", {
@@ -2009,7 +2012,8 @@ async function handle(req, res) {
         200,
         await updateReaderStatePayload({
           workId: body.work_id || body.workId || "",
-          action: body.action || ""
+          action: body.action || "",
+          payload: body.payload || {}
         })
       );
       return;

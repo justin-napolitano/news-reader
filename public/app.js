@@ -1,5 +1,6 @@
 const LIST_CONTEXT_KEY = "news-reader:list-context";
 const RELEVANCE_KEY = "news-reader:relevance-controls";
+const PROGRESS_KEY = "news-reader:reading-progress:v1";
 
 const state = {
   articles: [],
@@ -54,6 +55,49 @@ function formatDate(value) {
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function progressIdentity(article) {
+  return article.readerState?.work_id || article.id || article.url || "";
+}
+
+function loadProgressStore() {
+  try {
+    const store = JSON.parse(window.localStorage.getItem(PROGRESS_KEY) || "{}");
+    return store && typeof store === "object" ? store : {};
+  } catch (_err) {
+    return {};
+  }
+}
+
+function remoteProgress(readerState = {}) {
+  const candidate = readerState.reading_progress || readerState.progress || readerState;
+  const percent = Number(candidate.progress_percent ?? candidate.percent ?? 0);
+
+  if (!Number.isFinite(percent) || percent <= 0) {
+    return null;
+  }
+
+  return {
+    percent: Math.min(100, Math.max(0, Math.round(percent))),
+    updatedAt: candidate.updated_at || candidate.updatedAt || ""
+  };
+}
+
+function progressForArticle(article) {
+  const identity = progressIdentity(article);
+  const localProgress = identity ? loadProgressStore()[identity] : null;
+  const graphProgress = remoteProgress(article.readerState || {});
+  const progress = localProgress?.percent ? localProgress : graphProgress;
+
+  if (!progress?.percent) {
+    return null;
+  }
+
+  return {
+    ...progress,
+    percent: Math.min(100, Math.max(0, Math.round(progress.percent)))
+  };
 }
 
 function filteredArticles() {
@@ -263,6 +307,12 @@ function articleHref(article, index = -1) {
     params.set("archived", article.readerState.is_hidden ? "1" : "0");
   }
 
+  const progress = progressForArticle(article);
+
+  if (progress?.percent) {
+    params.set("progress", String(progress.percent));
+  }
+
   if (index >= 0) {
     params.set("index", String(index));
   }
@@ -359,6 +409,7 @@ function renderArticles() {
     const title = document.createElement("span");
     const excerpt = document.createElement("p");
     const why = document.createElement("div");
+    const progress = document.createElement("div");
     const controls = document.createElement("div");
     const primaryAction = document.createElement("button");
     const secondaryAction = document.createElement("button");
@@ -382,6 +433,12 @@ function renderArticles() {
     why.className = "article-why";
     why.textContent = `Why: ${article.relevance.reasons.join(" / ")}`;
     link.append(meta, title, excerpt, why);
+    const readingProgress = progressForArticle(article);
+    if (readingProgress) {
+      progress.className = "article-progress";
+      progress.textContent = readingProgress.percent >= 98 ? "Finished" : `${readingProgress.percent}% read`;
+      link.appendChild(progress);
+    }
     li.appendChild(link);
     if (canUpdateState) {
       controls.className = "article-actions";
