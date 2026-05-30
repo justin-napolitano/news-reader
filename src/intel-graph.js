@@ -74,22 +74,25 @@ function compactObject(value) {
 }
 
 function sourceConfigToGraphSource(source, evidenceRef = "data/sources.json") {
+  const sourceType = source.source_type || source.sourceType || "publisher";
+
   return compactObject({
     schema_version: 1,
     kind: "source",
     id: source.id,
-    source_type: "publisher",
+    source_type: sourceType,
     name: source.name,
     section: source.section || "",
-    feed_url: source.feedUrl,
-    allow_hosts: source.allowHosts || [],
-    tags: source.section ? [source.section] : [],
-    rights: {
+    feed_url: source.feedUrl || source.feed_url,
+    source_url: source.sourceUrl || source.source_url,
+    allow_hosts: source.allowHosts || source.allow_hosts || [],
+    tags: source.tags || (source.section ? [source.section] : []),
+    rights: source.rights || {
       full_text_storage: "metadata_only",
       notes: "Reader extraction is on demand; source full text is not persisted by default."
     },
     provenance: {
-      imported_from: "news-reader:data/sources.json",
+      imported_from: `news-reader:${evidenceRef}`,
       evidence_refs: [evidenceRef]
     }
   });
@@ -100,7 +103,7 @@ function feedItemToWork(item) {
     schema_version: 1,
     kind: "work",
     id: graphId("work", [item.url, item.title, item.sourceId]),
-    work_type: "article",
+    work_type: item.workType || item.work_type || "article",
     title: item.title,
     url: item.url,
     source_id: item.sourceId,
@@ -108,13 +111,13 @@ function feedItemToWork(item) {
     section: item.section || "",
     published_at: item.publishedAt || undefined,
     excerpt: item.excerpt || "",
-    identifiers: [{ type: "feed_item_id", value: item.id }],
-    rights: {
+    identifiers: item.identifiers || [{ type: "feed_item_id", value: item.id }],
+    rights: item.rights || {
       full_text_storage: "metadata_only",
       notes: "Feed metadata and excerpts may be stored; readable article text remains transient by default."
     },
     provenance: {
-      source_item_id: item.id,
+      source_item_id: item.sourceItemId || item.id,
       evidence_refs: [`source:${item.sourceId}`, `url:${item.url}`]
     }
   });

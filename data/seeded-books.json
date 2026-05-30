@@ -1,0 +1,52 @@
+{
+  "updated": "2026-05-29",
+  "sources": [
+    {
+      "id": "project-gutenberg",
+      "name": "Project Gutenberg",
+      "section": "Public Domain Library",
+      "sourceType": "library",
+      "sourceUrl": "https://www.gutenberg.org/",
+      "allowHosts": ["www.gutenberg.org", "gutenberg.org"],
+      "tags": ["books", "public-domain", "novels"],
+      "rights": {
+        "full_text_storage": "metadata_only",
+        "notes": "Project Gutenberg hosts public-domain texts. The reader stores seed metadata and fetches readable text on demand."
+      }
+    }
+  ],
+  "books": [
+    {
+      "id": "pride-and-prejudice",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Public Domain Novel",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "url": "https://www.gutenberg.org/files/1342/1342-0.txt",
+      "publishedAt": "1813-01-28T00:00:00.000Z",
+      "excerpt": "Jane Austen's comedy of manners follows Elizabeth Bennet through questions of family pressure, social rank, misread character, and hard-won judgment.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "1342" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "frankenstein",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Public Domain Novel",
+      "title": "Frankenstein; Or, The Modern Prometheus",
+      "author": "Mary Wollstonecraft Shelley",
+      "url": "https://www.gutenberg.org/files/84/84-0.txt",
+      "publishedAt": "1818-01-01T00:00:00.000Z",
+      "excerpt": "Mary Shelley's novel traces Victor Frankenstein's ambition, responsibility, and failure to care for the life he creates.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "84" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain novel available through Project Gutenberg."
+      }
+    }
+  ]
+}

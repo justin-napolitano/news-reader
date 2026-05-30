@@ -14,6 +14,7 @@ const { createLifeGraphDryRunImport } = require("../src/life-graph-adapter");
 const ROOT = path.resolve(__dirname, "..");
 const FIXTURE_DIR = path.join(ROOT, "test", "fixtures", "intel-graph");
 const SOURCE_PATH = path.join(ROOT, "data", "sources.json");
+const SEEDED_BOOKS_PATH = path.join(ROOT, "data", "seeded-books.json");
 
 const FIXTURE_SCHEMA_KEYS = {
   "annotation.json": "annotation",
@@ -89,6 +90,38 @@ function validateConfiguredSources(schemas) {
     }
 
     assertValid(schemas.source, sourceConfigToGraphSource(source), `source:${source.id}`);
+  });
+}
+
+function validateSeededBooks(schemas) {
+  const payload = readJson(SEEDED_BOOKS_PATH);
+
+  if (!Array.isArray(payload.sources) || !Array.isArray(payload.books)) {
+    throw new Error("data/seeded-books.json must contain sources and books arrays");
+  }
+
+  requireUnique(payload.sources.map((source) => source.id), "seeded book source ids");
+  requireUnique(payload.books.map((book) => book.id), "seeded book ids");
+
+  payload.sources.forEach((source) => {
+    assertValid(schemas.source, sourceConfigToGraphSource(source, "data/seeded-books.json"), `seeded-source:${source.id}`);
+  });
+
+  payload.books.forEach((book) => {
+    assertValid(schemas.work, feedItemToWork({
+      id: `seeded-book-${book.id}`,
+      sourceItemId: book.id,
+      sourceId: book.sourceId,
+      source: book.source,
+      section: book.section,
+      title: book.title,
+      url: book.url,
+      publishedAt: book.publishedAt,
+      excerpt: book.excerpt,
+      workType: "book",
+      identifiers: book.identifiers,
+      rights: book.rights
+    }), `seeded-book:${book.id}`);
   });
 }
 
@@ -220,6 +253,7 @@ function main() {
   validateSchemas(schemas);
   validateFixtures(schemas);
   validateConfiguredSources(schemas);
+  validateSeededBooks(schemas);
   validateLifeGraphMigrations(schemas);
   validateGeneratedObjects(schemas);
 
@@ -227,7 +261,7 @@ function main() {
     JSON.stringify(
       {
         ok: true,
-        checked: ["schemas", "fixtures", "configured sources", "life graph migrations", "generated objects"],
+        checked: ["schemas", "fixtures", "configured sources", "seeded books", "life graph migrations", "generated objects"],
         schema_count: Object.keys(schemas).length
       },
       null,
