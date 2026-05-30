@@ -1,0 +1,180 @@
+{
+  "updated": "2026-05-30",
+  "sources": [
+    {
+      "id": "project-gutenberg",
+      "name": "Project Gutenberg",
+      "section": "Public Domain Library",
+      "sourceType": "library",
+      "sourceUrl": "https://www.gutenberg.org/",
+      "allowHosts": ["www.gutenberg.org", "gutenberg.org"],
+      "tags": ["books", "public-domain", "novels"],
+      "rights": {
+        "full_text_storage": "metadata_only",
+        "notes": "Project Gutenberg hosts public-domain texts. The reader stores seed metadata and fetches readable text on demand."
+      }
+    }
+  ],
+  "books": [
+    {
+      "id": "pride-and-prejudice",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Public Domain Novel",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "url": "https://www.gutenberg.org/files/1342/1342-0.txt",
+      "publishedAt": "1813-01-28T00:00:00.000Z",
+      "excerpt": "Jane Austen's comedy of manners follows Elizabeth Bennet through questions of family pressure, social rank, misread character, and hard-won judgment.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "1342" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "frankenstein",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Public Domain Novel",
+      "title": "Frankenstein; Or, The Modern Prometheus",
+      "author": "Mary Wollstonecraft Shelley",
+      "url": "https://www.gutenberg.org/files/84/84-0.txt",
+      "publishedAt": "1818-01-01T00:00:00.000Z",
+      "excerpt": "Mary Shelley's novel traces Victor Frankenstein's ambition, responsibility, and failure to care for the life he creates.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "84" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "white-nights-and-other-stories",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "White Nights, and Other Stories",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/cache/epub/36034/pg36034.txt",
+      "publishedAt": "1848-01-01T00:00:00.000Z",
+      "excerpt": "A collection anchored by White Nights, Dostoevsky's early Petersburg tale of loneliness, romantic illusion, and the fragile inner life of the dreamer.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "36034" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky collection available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "crime-and-punishment",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "Crime and Punishment",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/2554/2554-0.txt",
+      "publishedAt": "1866-01-01T00:00:00.000Z",
+      "excerpt": "Raskolnikov's theory of exceptional action collapses into guilt, fever, confession, and moral reckoning in Dostoevsky's psychological crime novel.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "2554" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "the-brothers-karamazov",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "The Brothers Karamazov",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/28054/28054-0.txt",
+      "publishedAt": "1880-01-01T00:00:00.000Z",
+      "excerpt": "Dostoevsky's final novel turns a family murder into a philosophical trial over faith, freedom, inheritance, resentment, and responsibility.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "28054" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "the-idiot",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "The Idiot",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/2638/2638-0.txt",
+      "publishedAt": "1869-01-01T00:00:00.000Z",
+      "excerpt": "Prince Myshkin's radical innocence enters a society ruled by status, desire, money, humiliation, and spiritual confusion.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "2638" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "notes-from-underground",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "Notes from the Underground",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/600/600-0.txt",
+      "publishedAt": "1864-01-01T00:00:00.000Z",
+      "excerpt": "The Underground Man attacks rational self-interest, social vanity, and his own paralysis in one of Dostoevsky's sharpest first-person confessions.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "600" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novella available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "the-gambler",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "The Gambler",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/2197/2197-0.txt",
+      "publishedAt": "1867-01-01T00:00:00.000Z",
+      "excerpt": "Dostoevsky compresses obsession, debt, romance, class anxiety, and roulette into a short novel of compulsion and self-destruction.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "2197" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "the-possessed",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "The Possessed (The Devils)",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/8117/8117-0.txt",
+      "publishedAt": "1872-01-01T00:00:00.000Z",
+      "excerpt": "Often read as Demons, this political novel follows ideological contagion, conspiracy, charisma, and spiritual disorder in a provincial Russian town.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "8117" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    },
+    {
+      "id": "poor-folk",
+      "sourceId": "project-gutenberg",
+      "source": "Project Gutenberg",
+      "section": "Dostoevsky",
+      "title": "Poor Folk",
+      "author": "Fyodor Dostoevsky",
+      "url": "https://www.gutenberg.org/files/2302/2302-0.txt",
+      "publishedAt": "1846-01-01T00:00:00.000Z",
+      "excerpt": "Dostoevsky's first novel uses letters between Makar Devushkin and Varvara Dobroselova to study poverty, shame, tenderness, and social dependence.",
+      "identifiers": [{ "type": "gutenberg_id", "value": "2302" }],
+      "rights": {
+        "full_text_storage": "allowed",
+        "notes": "Public-domain Dostoevsky novel available through Project Gutenberg."
+      }
+    }
+  ]
+}

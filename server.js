@@ -38,6 +38,7 @@ const {
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const SOURCE_PATH = path.join(ROOT, "data", "sources.json");
+const SEEDED_BOOKS_PATH = path.join(ROOT, "data", "seeded-books.json");
 const PORT = Number.parseInt(process.env.PORT || "4175", 10);
 const HOST = process.env.HOST || "127.0.0.1";
 const FEED_TTL_MS = 10 * 60 * 1000;
@@ -577,8 +578,94 @@ function loadSources() {
   return readJson(SOURCE_PATH).sources;
 }
 
+function loadSeededBooks() {
+  if (process.env.NEWS_READER_FIXTURE === "1") {
+    return { sources: [], books: [] };
+  }
+
+  try {
+    const payload = readJson(SEEDED_BOOKS_PATH);
+
+    return {
+      sources: Array.isArray(payload.sources) ? payload.sources : [],
+      books: Array.isArray(payload.books) ? payload.books : []
+    };
+  } catch (_err) {
+    return { sources: [], books: [] };
+  }
+}
+
+function seededLibrarySources() {
+  return loadSeededBooks().sources.map((source) => ({
+    ...source,
+    sourceType: source.sourceType || source.source_type || "library",
+    feedUrl: source.feedUrl || source.feed_url || "",
+    sourceUrl: source.sourceUrl || source.source_url || "",
+    allowHosts: source.allowHosts || source.allow_hosts || []
+  }));
+}
+
+function seededBookItems() {
+  const library = loadSeededBooks();
+  const sourcesById = new Map(library.sources.map((source) => [source.id, source]));
+
+  return library.books.map((book) => {
+    const source = sourcesById.get(book.sourceId) || {};
+
+    return {
+      id: `work:${stableHash([book.url, book.title, book.sourceId])}`,
+      sourceItemId: book.id,
+      sourceId: book.sourceId,
+      source: book.source || source.name || book.sourceId,
+      section: book.section || source.section || "Book",
+      title: book.title,
+      url: book.url,
+      publishedAt: book.publishedAt || null,
+      excerpt: book.excerpt || "",
+      workType: "book",
+      identifiers: book.identifiers || [{ type: "seeded_book_id", value: book.id }],
+      rights: book.rights || {
+        full_text_storage: "metadata_only",
+        notes: "Seeded book metadata only."
+      }
+    };
+  }).filter((book) => book.sourceId && book.title && book.url);
+}
+
+function seededBooksForView(view = "unread") {
+  return ["unread", "feed", "feed_fallback"].includes(view) ? seededBookItems() : [];
+}
+
+function withSeededBooks(payload, { view = "unread" } = {}) {
+  const books = seededBooksForView(view);
+
+  if (!books.length) {
+    return payload;
+  }
+
+  const existingIds = new Set((payload.items || []).map((item) => item.id));
+  const seededItems = books.filter((book) => !existingIds.has(book.id));
+  const items = [...seededItems, ...(payload.items || [])];
+
+  return {
+    ...payload,
+    itemCount: items.length,
+    items
+  };
+}
+
+function withSeededLibrarySources(sources) {
+  const existingIds = new Set((sources || []).map((source) => source.id));
+  const seededSources = seededLibrarySources().filter((source) => !existingIds.has(source.id));
+
+  return [...seededSources, ...(sources || [])];
+}
+
 function graphSourcesPayload() {
-  const sources = loadSources().map((source) => sourceConfigToGraphSource(source));
+  const sources = [
+    ...loadSources().map((source) => sourceConfigToGraphSource(source)),
+    ...seededLibrarySources().map((source) => sourceConfigToGraphSource(source, "data/seeded-books.json"))
+  ];
 
   return {
     ok: true,
@@ -1067,6 +1154,20 @@ async function checkSourceHealth(source) {
     };
   }
 
+  if (!feedUrl && (source.sourceType === "library" || source.source_type === "library")) {
+    return {
+      id: source.id,
+      name: source.name,
+      feedUrl,
+      ok: true,
+      status: "static",
+      itemCount: seededBookItems().filter((book) => book.sourceId === source.id).length,
+      checkedAt,
+      responseMs: 0,
+      message: "Seeded library source; no feed health check required."
+    };
+  }
+
   if (!feedUrl) {
     return {
       id: source.id,
@@ -1164,11 +1265,14 @@ async function lifeGraphReaderWorksPayload({ view = "unread", sourceId = "", lim
   });
 }
 
-async function updateReaderStatePayload({ workId, action }) {
+async function updateReaderStatePayload({ workId, action, payload = {} }) {
   const remote = await updateLifeGraphReaderState({
     workId,
     action,
-    payload: { client: "news-reader" }
+    payload: {
+      client: "news-reader",
+      ...(payload && typeof payload === "object" ? payload : {})
+    }
   });
 
   return apiResponse("life_graph_intel_reader_state", {
@@ -1322,12 +1426,12 @@ async function loadItems({ refresh = false } = {}) {
     return bTime - aTime;
   });
 
-  const payload = {
+  const payload = withSeededBooks({
     generatedAt: new Date().toISOString(),
     itemCount: items.length,
     errors,
     items: items.slice(0, 160)
-  };
+  }, { view: "unread" });
 
   feedCache = { fetchedAt: Date.now(), payload };
   return payload;
@@ -1373,17 +1477,17 @@ async function refreshStatusPayload() {
 
 async function readerSourcesPayload() {
   if (lifeGraphConfig().itemsSource !== "life_graph") {
-    return { sources: loadSources(), source: "feed", errors: [] };
+    return { sources: withSeededLibrarySources(loadSources()), source: "feed", errors: [] };
   }
 
   const sources = await loadLifeGraphReaderSources();
 
   if (sources.length) {
-    return { sources, source: "life_graph", errors: [] };
+    return { sources: withSeededLibrarySources(sources), source: "life_graph", errors: [] };
   }
 
   return {
-    sources: loadSources(),
+    sources: withSeededLibrarySources(loadSources()),
     source: "feed_fallback",
     errors: [
       {
@@ -1412,11 +1516,11 @@ async function allowedReaderSources() {
     const sources = await loadLifeGraphReaderSources();
 
     if (sources.length) {
-      return sources;
+      return withSeededLibrarySources(sources);
     }
   }
 
-  return loadSources();
+  return withSeededLibrarySources(loadSources());
 }
 
 async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
@@ -1431,19 +1535,19 @@ async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
     const works = Array.isArray(data.works) ? data.works : [];
     const items = works.map(intelWorkToReaderItem);
 
-    return {
+    return withSeededBooks({
       generatedAt: new Date().toISOString(),
       itemCount: items.length,
       source: "life_graph",
       view: data.view || view,
       errors: [],
       items
-    };
+    }, { view: data.view || view });
   }
 
   const fallback = await loadItems({ refresh });
 
-  return {
+  return withSeededBooks({
     ...fallback,
     source: "feed_fallback",
     view: "feed_fallback",
@@ -1456,7 +1560,7 @@ async function readerItemsPayload({ refresh = false, view = "unread" } = {}) {
       },
       ...fallback.errors
     ]
-  };
+  }, { view: "feed_fallback" });
 }
 
 async function refreshReaderItemsPayload({ view = "unread" } = {}) {
@@ -1908,7 +2012,8 @@ async function handle(req, res) {
         200,
         await updateReaderStatePayload({
           workId: body.work_id || body.workId || "",
-          action: body.action || ""
+          action: body.action || "",
+          payload: body.payload || {}
         })
       );
       return;

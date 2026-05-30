@@ -222,6 +222,13 @@ h2 {
   font-weight: 800;
 }
 
+.article-progress {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .article-list li {
   border-bottom: 1px solid var(--line);
 }
@@ -342,6 +349,39 @@ h2 {
   color: var(--muted);
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.reader-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  max-width: 680px;
+  margin-top: 16px;
+}
+
+.reader-progress-track {
+  height: 6px;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.reader-progress-track span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  transition: width 160ms ease;
+}
+
+.reader-progress p {
+  min-width: 42px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: right;
 }
 
 .reader-note-form {
