@@ -347,6 +347,7 @@ function loginPage({ error = "", configured = true, next = "/" } = {}) {
     <meta name="theme-color" content="#f4f0e8" />
     <title>News Reader Login</title>
     <style>
+      @font-face { font-family: Inter; src: url('/fonts/Inter-Variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
       :root { color-scheme: light; --paper: #f4f0e8; --ink: #25251f; --muted: #5e605c; --line: #cbc8bf; --accent: #4d606e; --error: #9f1239; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
       body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 18px; color: var(--ink); background: var(--paper); text-rendering: geometricPrecision; }
