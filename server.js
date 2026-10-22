@@ -344,20 +344,22 @@ function loginPage({ error = "", configured = true, next = "/" } = {}) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#047857" />
+    <meta name="theme-color" content="#f4f0e8" />
     <title>News Reader Login</title>
     <style>
-      :root { color-scheme: light; --paper: #f7f7f2; --ink: #11110f; --muted: #62625c; --line: #d8d6cf; --accent: #047857; --error: #9f1239; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      @font-face { font-family: Inter; src: url('/fonts/Inter-Variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+      :root { color-scheme: light; --paper: #f4f0e8; --ink: #25251f; --muted: #5e605c; --line: #cbc8bf; --accent: #4d606e; --error: #9f1239; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
-      body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 18px; color: var(--ink); background: var(--accent); text-rendering: geometricPrecision; }
-      main { width: min(100%, 420px); padding: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+      body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 18px; color: var(--ink); background: var(--paper); text-rendering: geometricPrecision; }
+      main { width: min(100%, 420px); padding: 28px; background: #fbfaf7; border: 1px solid var(--line); border-radius: 0; }
       p, h1 { margin-top: 0; }
-      h1 { margin-bottom: 10px; font-size: clamp(38px, 12vw, 72px); line-height: 0.92; font-weight: 520; letter-spacing: 0; }
+      h1 { margin-bottom: 10px; font-size: 24px; line-height: 1.35; font-weight: 600; letter-spacing: -0.02em; }
       p { color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
       form { display: grid; gap: 12px; margin-top: 24px; }
-      label { display: grid; gap: 7px; color: var(--muted); font-size: 0.76rem; font-weight: 800; text-transform: uppercase; }
-      input { min-height: 44px; width: 100%; padding: 0 12px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
-      button { min-height: 44px; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; font: inherit; font-size: 0.86rem; font-weight: 800; cursor: pointer; }
+      label { display: grid; gap: 7px; color: var(--muted); font-size: 0.875rem; font-weight: 500; }
+      input { min-height: 44px; width: 100%; padding: 0 12px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 2px; font: inherit; }
+      button { min-height: 44px; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 2px; font: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
       .error { color: var(--error); font-weight: 750; }
     </style>
   </head>
@@ -1567,6 +1569,7 @@ async function readArticle(articleUrl) {
 }
 
 function contentTypeFor(filePath) {
+  if (filePath.endsWith(".ttf")) return "font/ttf";
   if (filePath.endsWith(".html")) return "text/html; charset=utf-8";
   if (filePath.endsWith(".css")) return "text/css; charset=utf-8";
   if (filePath.endsWith(".js")) return "text/javascript; charset=utf-8";
