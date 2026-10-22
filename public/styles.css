@@ -1,11 +1,27 @@
+@font-face {
+  font-family: Inter;
+  src: url("/fonts/Inter-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/fonts/SourceSerif4-Variable.ttf") format("truetype");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
-  --paper: #f7f7f2;
-  --ink: #11110f;
-  --muted: #62625c;
-  --line: #d8d6cf;
-  --accent: #047857;
-  --surface: #ffffff;
+  --paper: #f4f0e8;
+  --ink: #25251f;
+  --muted: #5e605c;
+  --line: #cbc8bf;
+  --accent: #4d606e;
+  --surface: #fbfaf7;
   --error: #9f1239;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -20,11 +36,18 @@ body {
   min-height: 100%;
   margin: 0;
   color: var(--ink);
-  background: var(--accent);
+  background: var(--paper);
 }
 
 body {
   text-rendering: geometricPrecision;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 button,
@@ -56,14 +79,16 @@ button {
   justify-content: space-between;
   gap: 24px;
   padding: 18px 0 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
   background: var(--paper);
 }
 
 .eyebrow {
   margin: 0 0 8px;
-  color: var(--accent);
+  color: var(--muted);
   font-size: 0.76rem;
-  font-weight: 750;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
@@ -75,17 +100,17 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(48px, 8vw, 112px);
-  line-height: 0.92;
-  font-weight: 520;
-  letter-spacing: 0;
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 h2 {
   margin-bottom: 0;
-  font-size: clamp(28px, 4vw, 54px);
-  line-height: 1;
-  font-weight: 560;
+  font-size: 22px;
+  line-height: 1.4;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
@@ -102,14 +127,14 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 40px;
   padding: 0 13px;
   color: var(--paper);
   background: var(--ink);
   border: 1px solid var(--ink);
-  border-radius: 6px;
+  border-radius: 2px;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .button-link {
@@ -136,20 +161,20 @@ h2 {
 .view-filter,
 .source-filter {
   flex: 0 0 auto;
-  min-height: 32px;
+  min-height: 40px;
   padding: 0 10px;
   color: var(--muted);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 2px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .view-filter.is-active,
 .source-filter.is-active {
-  color: var(--paper);
-  background: var(--accent);
+  color: var(--ink);
+  background: var(--surface);
   border-color: var(--accent);
 }
 
@@ -201,9 +226,9 @@ h2 {
   display: block;
   margin-top: 8px;
   max-width: 980px;
-  font-size: clamp(18px, 2.3vw, 31px);
-  line-height: 1.12;
-  font-weight: 620;
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 500;
   transition: color 140ms ease;
 }
 
@@ -320,14 +345,15 @@ h2 {
   padding: clamp(20px, 3vw, 38px);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .reader-page h1 {
   max-width: 840px;
-  font-size: clamp(24px, 3.5vw, 42px);
-  line-height: 1.08;
-  font-weight: 620;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 28px;
+  line-height: 1.35;
+  font-weight: 500;
 }
 
 .reader-head {
@@ -392,8 +418,8 @@ h2 {
   max-width: 780px;
   padding-top: 22px;
   color: #22221f;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(18px, 2vw, 22px);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 19px;
   line-height: 1.58;
 }
 
@@ -447,8 +473,8 @@ h2 {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 12px;
   padding: 14px clamp(14px, 3vw, 36px) 18px;
-  color: var(--paper);
-  background: var(--accent);
+  color: var(--ink);
+  background: var(--paper);
   overscroll-behavior: contain;
 }
 
@@ -460,8 +486,8 @@ h2 {
 }
 
 .review-topbar .back-link {
-  color: var(--paper);
-  border-color: rgba(247, 247, 242, 0.35);
+  color: var(--ink);
+  border-color: var(--line);
 }
 
 .review-progress {
@@ -473,7 +499,7 @@ h2 {
 }
 
 .review-progress span:last-child {
-  color: rgba(247, 247, 242, 0.74);
+  color: var(--muted);
 }
 
 .review-stage {
@@ -492,17 +518,19 @@ h2 {
   gap: 18px;
   padding: clamp(22px, 5vw, 42px);
   color: var(--ink);
-  background: var(--paper);
-  border: 1px solid rgba(17, 17, 15, 0.12);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(17, 17, 15, 0.24);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
   touch-action: none;
   transition: transform 140ms ease;
   will-change: transform;
 }
 
 .review-card h1 {
-  font-size: clamp(34px, 8vw, 74px);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .review-excerpt,
@@ -510,9 +538,9 @@ h2 {
   max-width: 66ch;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(1.1rem, 3.2vw, 1.55rem);
-  line-height: 1.36;
-  font-weight: 520;
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .review-chunk {
@@ -623,7 +651,7 @@ h2 {
   padding: clamp(18px, 3vw, 28px);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .panel-label {
@@ -635,7 +663,7 @@ h2 {
 }
 
 .admin-panel h2 {
-  font-size: clamp(24px, 4vw, 44px);
+  font-size: 22px;
 }
 
 .admin-panel label {
