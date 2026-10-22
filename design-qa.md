@@ -24,3 +24,9 @@ Console: no page JavaScript exception. Registry/writing public routes have no fa
 Implementation checklist: responsive captures reviewed; reference comparisons opened; focused states tested; applicable fixes recaptured. No remaining actionable P0/P1/P2 visual finding. Existing external integrations and live authentication will be checked read-only after deployment without changing protection.
 
 final result: passed
+# Main integration follow-up
+
+The newer main branch adds a public reader preview beside the login form. The merge preserves that DOM, the public feed, and authentication behavior while retaining the approved paper/ink palette, modest 24px login heading, readable labels, and visible focus.
+
+Verification: `node --check server.js`, `git diff --check`, and the existing `npm run smoke` pass. Smoke covers public reader contracts, login/session creation, unauthenticated API/cron rejection, admin pages and write guards. Chromium captures of `/` and `/login` at 320, 390 and 1440px have no JavaScript errors or horizontal overflow. The desktop login screenshot was visually inspected; both the form and public preview render correctly. Fixture data only; no production writes. Evidence: coordinator `implementation-evidence/merge-news/`.
+
