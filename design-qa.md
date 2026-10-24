@@ -30,3 +30,14 @@ The newer main branch adds a public reader preview beside the login form. The me
 
 Verification: `node --check server.js`, `git diff --check`, and the existing `npm run smoke` pass. Smoke covers public reader contracts, login/session creation, unauthenticated API/cron rejection, admin pages and write guards. Chromium captures of `/` and `/login` at 320, 390 and 1440px have no JavaScript errors or horizontal overflow. The desktop login screenshot was visually inspected; both the form and public preview render correctly. Fixture data only; no production writes. Evidence: coordinator `implementation-evidence/merge-news/`.
 
+
+
+## 2026-10-23: Shared midpoint palette
+
+Final result: passed
+
+Apply midpoint red (#d01527) to text accents, hover/focus/selection states, keeping green (#356349) exclusively as the native scroll canvas behind a full-height paper page surface. Screen-only overrides preserve print styling and published PDF files. Existing dark modes retain readable contrast with a lighter red text variant. No application data, destinations, authentication, or runtime dependencies changed.
+
+The production build/static checks pass using the repository lockfile. Browser checks at 320, 390, and 1440 pixels verify palette tokens, green root/body canvas, paper surface without exposed green bands, selection color, and no page overflow or runtime exceptions. Screenshots were inspected. Existing dark modes also pass. The news reader includes narrow-screen wrapping for article controls/text found during this review; hiring CTA text retains sufficient contrast on red.
+
+Local build/browser evidence is retained outside this repo in the rollout directory. Production status and screenshots are recorded after release; this local QA result does not assert production has already changed.
