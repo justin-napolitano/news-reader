@@ -809,12 +809,12 @@ h2 {
   }
 }
 
-/* Shared approved palette: midpoint-red text accents, green native scroll canvas. */
+/* Shared approved palette: deep-forest text accents, green native scroll canvas. */
 @media screen {
   :root, :root[data-theme], :root[data-brand-theme] {
-    --brand-accent: #d01527;
+    --brand-accent: #285447;
     --brand-text-accent: var(--brand-accent);
-    --brand-highlight: #fff0f2;
+    --brand-highlight: #e5eee7;
     --brand-canvas: #356349;
     --brand-page: #f4f0e8;
     --accent: var(--brand-accent);
