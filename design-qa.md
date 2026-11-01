@@ -41,3 +41,14 @@ Apply midpoint red (#d01527) to text accents, hover/focus/selection states, keep
 The production build/static checks pass using the repository lockfile. Browser checks at 320, 390, and 1440 pixels verify palette tokens, green root/body canvas, paper surface without exposed green bands, selection color, and no page overflow or runtime exceptions. Screenshots were inspected. Existing dark modes also pass. The news reader includes narrow-screen wrapping for article controls/text found during this review; hiring CTA text retains sufficient contrast on red.
 
 Local build/browser evidence is retained outside this repo in the rollout directory. Production status and screenshots are recorded after release; this local QA result does not assert production has already changed.
+
+
+## 2026-11-01: Deep forest and skill hierarchy
+
+Local visual result: passed
+
+Approved deep forest (#285447), pale sage highlights (#e5eee7) and existing green native scroll canvas (#356349). Dark-mode links use pale green (#acd0b8) for contrast.
+
+Production build/static checks passed. Browser checks passed at 320, 390 and 1440 pixels. Checks cover accent/selection colors, full-height paper surfaces without exposed green bands, no horizontal page overflow, and no browser runtime exceptions. Existing dark modes are checked. Resume card ordering, relative type sizes and print punctuation are verified. Screenshots are retained in the local rollout evidence directory.
+
+Publication status is recorded separately after preview checks and production verification. No application data, dependency, schema or published PDF changes are included.
